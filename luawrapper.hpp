@@ -855,5 +855,22 @@ void register_class (lua_State *L)
 	return luawrapper::AutoDestructor<std::shared_ptr<classtype>> (L);\
 	LUAWRAPPER_END_METAFUNCTION_WRAPPER()
 
+#define LUAWRAPPER_BEGIN_MULTIARG_MEMBER_WRAPPER(NAME) LUAWRAPPER_BEGIN_MEMBER_WRAPPER(NAME)\
+    switch (lua_gettop (L) - 1)\
+    {
+#define LUAWRAPPER_MULTIARG_MEMBER_ENTRY_SHARED_PTR(N,RETVAL,NAME,...) case N:\
+    return AutoWrapSharedPtr<RETVAL, classtype, ##__VA_ARGS__> (L, &classtype::NAME);\
+    break;
+#define LUAWRAPPER_MULTIARG_MEMBER_ENTRY_PTR(N,RETVAL,NAME,...) case N:\
+    return AutoWrapPtr<RETVAL, classtype, ##__VA_ARGS__> (L, &classtype::NAME);\
+    break;
+#define LUAWRAPPER_MULTIARG_MEMBER_ENTRY(N,RETVAL,NAME,...) case N:\
+    return AutoWrap<RETVAL, classtype, ##__VA_ARGS__> (L, &classtype::NAME);\
+    break;
+#define LUAWRAPPER_END_MULTIARG_MEMBER_WRAPPER() default:\
+        LuaThrow (L, "Invalid arguments");\
+    }\
+    LUAWRAPPER_END_MEMBER_WRAPPER()
+
 #define LUAWRAPPER_END_CLASS_WRAPPER() }}}
 #endif /* !defined LUAWRAPPER_HPP */
