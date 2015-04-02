@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <typeinfo>
 #include "luawrapper.h"
 
 class BaseTest

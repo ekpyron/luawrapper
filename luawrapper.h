@@ -24,20 +24,21 @@
 #ifndef LUAWRAPPER_H
 #define LUAWRAPPER_H
 
-#include <memory>
 #include <vector>
+#include <stdexcept>
 extern "C" {
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 }
-#include <iostream>
 
 namespace lua {
 
 class function;
 typedef std::initializer_list<function> functionlist;
+struct ManualReturn {};
 
+// strong reference to a lua object
 class Reference {
 public:
     Reference (void) : L (nullptr), ref (LUA_NOREF) {}
@@ -62,6 +63,7 @@ private:
     friend class WeakReference;
 };
 
+// weak reference to a lua object
 class WeakReference {
 public:
     WeakReference (void) : L (nullptr), ref (LUA_NOREF) {}
@@ -88,24 +90,21 @@ private:
 
 namespace detail {
 
+// private helper functions
 void AddToTables (lua_State *L, const function *ptr, const size_t &size);
 void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
 void CreateMetatable (lua_State *L, const functionlist &functions);
 void RegisterClass (lua_State *L, const char *name, const functionlist &functions);
 
+// template helpers
 template<typename T>
 struct remove_ptr {
     typedef typename std::remove_pointer<T>::type type;
-};
-template<typename T>
-struct remove_ptr<std::shared_ptr<T>> {
-    typedef T type;
 };
 template<typename C>
 struct baretype {
     typedef typename std::remove_cv<typename std::remove_reference<C>::type>::type type;
 };
-
 template<typename T>
 struct has_lua_functions {
 private:
@@ -117,7 +116,12 @@ private:
 public:
     static constexpr bool value = sizeof (test<T>(0)) == sizeof (char);
 };
-
+template<typename T>
+struct IsUserdata {
+    static constexpr bool value = !std::is_arithmetic<T>::value && !std::is_same<T, ManualReturn>::value
+                                  && !std::is_same<T, std::string>::value && !std::is_same<T, Reference>::value
+                                  && !std::is_same<T, WeakReference>::value;
+};
 template<typename R> struct ReturnType { typedef R &type; };
 template<> struct ReturnType<std::string> { typedef std::string type; };
 template<> struct ReturnType<float> { typedef float type; };
@@ -130,15 +134,8 @@ template<> struct ReturnType<bool> { typedef bool type; };
 template<> struct ReturnType<lua_State*> { typedef lua_State *type; };
 template<> struct ReturnType<Reference> { typedef Reference type; };
 template<> struct ReturnType<WeakReference> { typedef WeakReference type; };
-
 inline bool alltrue (void) { return true; }
 template<typename... Args> bool alltrue (bool u, Args... args) { return u && alltrue (args...); }
-
-template<typename T>
-struct is_shared_ptr { static constexpr bool value = false; };
-template<typename T>
-struct is_shared_ptr<std::shared_ptr<T>> { static constexpr bool value = false; };
-
 template<int ...> struct seq { };
 template<int N, int ...S> struct gens : gens<N-1, N-1, S...> { };
 template<int ...S> struct gens<0, S...> { typedef seq<S...> type; };
@@ -148,6 +145,7 @@ template <int N, typename U0, typename... U> struct tuple_element<N, U0, U...> {
     typedef typename tuple_element<N-1, U...>::type type;
 };
 
+// dummy datatypes for function description constuctors
 struct MetafunctionType {};
 struct StaticfunctionType {};
 struct ConstructorType {};
@@ -157,6 +155,7 @@ struct NewindexfunctionType {};
 
 } /* namespace detail */
 
+// dummy values for function description constructors
 static detail::MetafunctionType MetaFunction;
 static detail::StaticfunctionType StaticFunction;
 static detail::ConstructorType Constructor;
@@ -164,6 +163,7 @@ static detail::DestructorType Destructor;
 static detail::IndexfunctionType IndexFunction;
 static detail::NewindexfunctionType NewIndexFunction;
 
+// function description
 class function {
 public:
     function (const char *_name, const lua_CFunction &_func)
@@ -217,7 +217,10 @@ template<typename T>
 struct Functions;
 
 // type checking on lua stack
-template<typename T> inline bool checkarg (lua_State *L, const int &index) { return lua_isuserdata (L, index); }
+template<typename T> inline bool checkarg (lua_State *L, const int &index) {
+    // TODO: perform type checking here
+    return lua_isuserdata (L, index);
+}
 template<> inline bool checkarg<float> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
 template<> inline bool checkarg<double> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
 template<> inline bool checkarg<bool> (lua_State *L, const int &index) { return lua_isboolean (L, index); }
@@ -251,10 +254,8 @@ template<> inline WeakReference pull<WeakReference> (lua_State *L, const int &in
 template<> inline lua_State *pull<lua_State *> (lua_State *L, const int &index) { return L; }
 
 // pushing to lua stack
-struct ManualReturn { };
 template<typename T, typename... Args>
-void push (typename std::enable_if<!std::is_arithmetic<T>::value && detail::has_lua_functions<T>::value && !std::is_same<T, ManualReturn>::value
-                                   && !std::is_same<T, std::string>::value && !std::is_same<T, Reference>::value && !std::is_same<T, WeakReference>::value, lua_State>::type *L, Args... args) {
+void push (typename std::enable_if<detail::IsUserdata<T>::value && detail::has_lua_functions<T>::value, lua_State>::type *L, Args... args) {
     T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
     detail::CreateMetatable (L, detail::remove_ptr<typename detail::baretype<T>::type>::type::lua_functions);
     // construct object
@@ -263,8 +264,7 @@ void push (typename std::enable_if<!std::is_arithmetic<T>::value && detail::has_
     lua_setmetatable (L, -2);
 }
 template<typename T, typename... Args>
-void push (typename std::enable_if<!std::is_arithmetic<T>::value && !detail::has_lua_functions<T>::value && !std::is_same<T, ManualReturn>::value
-                                   && !std::is_same<T, std::string>::value && !std::is_same<T, Reference>::value && !std::is_same<T, WeakReference>::value, lua_State>::type *L, Args... args) {
+void push (typename std::enable_if<detail::IsUserdata<T>::value && !detail::has_lua_functions<T>::value, lua_State>::type *L, Args... args) {
     T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
     detail::CreateMetatable (L, Functions<typename detail::remove_ptr<typename detail::baretype<T>::type>::type>::lua_functions);
     // construct object
@@ -272,9 +272,7 @@ void push (typename std::enable_if<!std::is_arithmetic<T>::value && !detail::has
     // set metatable for userdata, hence ensuring destruction of the object
     lua_setmetatable (L, -2);
 }
-template<typename T> void push (typename std::enable_if<std::is_arithmetic<T>::value || std::is_same<T, ManualReturn>::value
-                                                        || std::is_same<T, std::string>::value || std::is_same<T, Reference>::value
-                                                        || std::is_same<T, WeakReference>::value, lua_State>::type *L, const T &t);
+template<typename T> void push (typename std::enable_if<!detail::IsUserdata<T>::value, lua_State>::type *L, const T &t);
 template<> inline void push<float> (lua_State *L, const float &v) { lua_pushnumber (L, v); }
 template<> inline void push<double> (lua_State *L, const double &v) { lua_pushnumber (L, v); }
 template<> inline void push<bool> (lua_State *L, const bool &v) { lua_pushboolean (L, v); }
@@ -499,25 +497,6 @@ struct Construct {
         return true;
     }
 };
-template<typename T, typename... Args>
-struct ConstructSharedPtr {
-    static int WrapSharedPtr (lua_State *L) {
-        std::shared_ptr<T> *ptr = static_cast<std::shared_ptr<T>*> (lua_newuserdata (L, sizeof (std::shared_ptr<T>)));
-        lua::detail::CreateMetatable (L, T::lua_functions);
-        new (ptr) std::shared_ptr<T> (lua::detail::Constructor<T, Args...>::construct (L, 2));
-        lua_setmetatable (L, -2);
-        return 1;
-    }
-    static bool WrapSharedPtr (lua_State *L, int &results) {
-        std::shared_ptr<T> *ptr = static_cast<std::shared_ptr<T>*> (lua_newuserdata (L, sizeof (std::shared_ptr<T>)));
-        T *p = lua::detail::Constructor<T, Args...>::try_construct (L, 2);
-        if (p == nullptr) { lua_pop (L, 1); return false; }
-        lua::detail::CreateMetatable (L, T::lua_functions);
-        new (ptr) std::shared_ptr<T> (p);
-        lua_setmetatable (L, -2);
-        return 1;
-    }
-};
 
 // Destructor wrappers.
 template<typename T>
@@ -525,10 +504,6 @@ int Destruct (lua_State *L) {
     T *obj = static_cast<T*> (lua_touserdata (L, lua_upvalueindex (1)));
     obj->~T ();
     return 0;
-}
-template<typename T>
-int DestructSharedPtr (lua_State *L) {
-    return Destruct<std::shared_ptr<T>> (L);
 }
 
 // Function wrappers.
@@ -544,21 +519,9 @@ struct Function<Retval(Args...)> {
         }
     };
     template<typename T, Retval (T::*M) (Args...), int skipargs = 0>
-    struct OverloadSharedPtr {
-        static bool Wrap (lua_State *L, int &results) {
-            std::shared_ptr<T> *t = static_cast<std::shared_ptr<T>*> (lua_touserdata (L, lua_upvalueindex (1)));
-            return lua::detail::Caller<Retval, T, Args...>::try_call (L, results, 1 + skipargs, t->get (), M);
-        }
-    };
-    template<typename T, Retval (T::*M) (Args...), int skipargs = 0>
     static int Wrap (lua_State *L) {
         T *t = static_cast<T*> (lua_touserdata (L, lua_upvalueindex (1)));
         return lua::detail::Caller<Retval, T, Args...>::call (L, 1 + skipargs, t, M);
-    }
-    template<typename T, Retval (T::*M) (Args...), int skipargs = 0>
-    static int WrapSharedPtr (lua_State *L) {
-        std::shared_ptr<T> *t = static_cast<std::shared_ptr<T>*> (lua_touserdata (L, lua_upvalueindex (1)));
-        return lua::detail::Caller<Retval, T, Args...>::call (L, 1 + skipargs, t->get (), M);
     }
 };
 
