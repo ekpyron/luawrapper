@@ -138,6 +138,12 @@ void State::push_weak_registry (lua_State *L)
     lua_rawgeti (L, LUA_REGISTRYINDEX, 1);
 }
 
+Reference::Reference (lua_State *_L, const int &index) : L (_L)
+{
+    lua_pushvalue (L, index);
+    ref = luaL_ref(L, LUA_REGISTRYINDEX);
+}
+
 Reference::Reference (const Reference &r) : L (r.L)
 {
     if (r.valid ()) {
@@ -175,6 +181,15 @@ void Reference::reset (void)
         L = nullptr; ref = LUA_NOREF;
     }
 }
+
+WeakReference::WeakReference (lua_State *_L, const int &index) : L (_L)
+{
+    State::push_weak_registry (L);
+    lua_pushvalue (L, index < 0 ? index - 1 : index);
+    ref = luaL_ref (L, -2);
+    lua_pop (L, 1);
+}
+
 
 WeakReference::WeakReference (const WeakReference &r) : L (r.L)
 {

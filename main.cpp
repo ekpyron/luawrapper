@@ -23,8 +23,6 @@ lua::functionlist BaseTest::lua_functions = {
 
 class Test;
 
-Test *globaltest;
-
 class Test : public BaseTest
 {
 public:
@@ -82,7 +80,6 @@ public:
         test = t;
     }
     int GetTest (void) {
-        std::cout << "GetTest " << this << std::endl;
         return test;
     }
 
@@ -103,11 +100,7 @@ public:
     }
 
     lua::ManualReturn GetValue (lua_State *L, const std::string &str) {
-        if (!str.compare ("test")) {
-            lua::push<Test*> (L, globaltest);
-        } else {
-            lua::push<int> (L, str.length ());
-        }
+        lua::push<int> (L, str.length ());
         return lua::ManualReturn ();
     }
 
@@ -190,12 +183,6 @@ int main (int argc, char *argv[])
     lua_atpanic (L, panicfn);
 
     lua::register_class<Test> (L, "Test");
-
-    Test tmp ("GLOBALTEST");
-    tmp.SetTest (600);
-    globaltest = &tmp;
-
-    std::cout << "GLOBALTEST ADDR: " << globaltest << std::endl;
 
     lua::push<Test> (L, 42);
     lua_setglobal (L, "test");

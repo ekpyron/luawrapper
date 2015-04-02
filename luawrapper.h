@@ -43,8 +43,8 @@ struct Functions;
 // strong reference to a lua object
 class Reference {
 public:
+    Reference (lua_State *L, const int &index);
     Reference (void) : L (nullptr), ref (LUA_NOREF) {}
-    Reference (lua_State *_L, const int &r) : L (_L), ref (r) {}
     Reference (Reference &&r) : L (r.L), ref (r.ref) {
         r.L = nullptr; r.ref = LUA_NOREF;
     }
@@ -69,7 +69,7 @@ private:
 class WeakReference {
 public:
     WeakReference (void) : L (nullptr), ref (LUA_NOREF) {}
-    WeakReference (lua_State *_L, const int &r) : L (_L), ref (r) {}
+    WeakReference (lua_State *L, const int &index);
     WeakReference (WeakReference &&r) : L (r.L), ref (r.ref) {
         r.L = nullptr; r.ref = LUA_NOREF;
     }
@@ -257,8 +257,7 @@ template<> inline std::string pull<std::string> (lua_State *L, const int &index)
     return std::string (str, len);
 }
 template<> inline Reference pull<Reference> (lua_State *L, const int &index) {
-    lua_pushvalue (L, index);
-    return Reference (L, luaL_ref (L, LUA_REGISTRYINDEX));
+    return Reference (L, index);
 }
 template<> inline WeakReference pull<WeakReference> (lua_State *L, const int &index);
 template<> inline lua_State *pull<lua_State *> (lua_State *L, const int &index) { return L; }
@@ -606,11 +605,7 @@ T *WeakReference::convert (void) {
 }
 
 template<> inline WeakReference pull<WeakReference> (lua_State *L, const int &index) {
-    State::push_weak_registry (L);
-    lua_pushvalue (L, index);
-    int ref = luaL_ref (L, -2);
-    lua_pop (L, 1);
-    return WeakReference (L, ref);
+    return WeakReference (L, index);
 }
 
 template<> inline void push<WeakReference> (lua_State *L, const WeakReference &v) {
