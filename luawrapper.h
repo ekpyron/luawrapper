@@ -78,9 +78,7 @@ public:
     WeakReference &operator= (const WeakReference &r);
     WeakReference &operator= (WeakReference &&r);
     ~WeakReference (void);
-    bool valid (void) const {
-        return L != nullptr && ref != LUA_NOREF && ref != LUA_REFNIL;
-    }
+    bool valid (void) const;
     operator const int &(void) const { return ref; }
     template<typename T>
     T *convert (void);

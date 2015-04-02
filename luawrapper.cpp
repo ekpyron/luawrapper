@@ -235,6 +235,15 @@ WeakReference &WeakReference::operator= (WeakReference &&r)
     ref = r.ref; r.ref = LUA_NOREF;
     return *this;
 }
+bool WeakReference::valid (void) const
+{
+    if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return false;
+    State::push_weak_registry (L);
+    lua_rawgeti (L, -1, ref);
+    bool v = !lua_isnil (L, -1);
+    lua_pop (L, 2);
+    return v;
+}
 void WeakReference::reset (void)
 {
     if (L != nullptr && ref != LUA_NOREF) {
