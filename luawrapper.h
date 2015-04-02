@@ -37,6 +37,8 @@ namespace lua {
 class function;
 typedef std::initializer_list<function> functionlist;
 struct ManualReturn {};
+template<typename T>
+struct Functions;
 
 // strong reference to a lua object
 class Reference {
@@ -95,7 +97,6 @@ void AddToTables (lua_State *L, const function *ptr, const size_t &size);
 void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
 void CreateMetatable (lua_State *L, const functionlist &functions);
 void RegisterClass (lua_State *L, const char *name, const functionlist &functions);
-
 // template helpers
 template<typename T>
 struct remove_ptr {
@@ -116,6 +117,15 @@ private:
 public:
     static constexpr bool value = sizeof (test<T>(0)) == sizeof (char);
 };
+template<typename T>
+void CreateMetatable (typename std::enable_if<detail::has_lua_functions<T>::value, lua_State>::type *L) {
+    CreateMetatable (L, detail::remove_ptr<typename detail::baretype<T>::type>::type::lua_functions);
+}
+template<typename T>
+void CreateMetatable (typename std::enable_if<!detail::has_lua_functions<T>::value, lua_State>::type *L) {
+    CreateMetatable (L, Functions<typename detail::remove_ptr<typename detail::baretype<T>::type>::type>::lua_functions);
+}
+
 template<typename T>
 struct IsUserdata {
     static constexpr bool value = !std::is_arithmetic<T>::value && !std::is_same<T, ManualReturn>::value
@@ -213,9 +223,6 @@ private:
     };
 };
 
-template<typename T>
-struct Functions;
-
 // type checking on lua stack
 template<typename T> inline bool checkarg (lua_State *L, const int &index) {
     // TODO: perform type checking here
@@ -234,7 +241,10 @@ template<> inline bool checkarg<Reference> (lua_State *L, const int &index) { re
 template<> inline bool checkarg<WeakReference> (lua_State *L, const int &index) { return true; }
 
 // pulling from the lua stack
-template<typename T> inline typename detail::ReturnType<T>::type pull (lua_State *L, const int &index) { return *static_cast<T*> (lua_touserdata (L, index)); }
+template<typename T> inline typename detail::ReturnType<T>::type pull (lua_State *L, const int &index) {
+    // TODO: this will NOT work if the userdata was pushed as a pointer
+    return *static_cast<T*> (lua_touserdata (L, index));
+}
 template<> inline float pull<float> (lua_State *L, const int &index) { return lua_tonumber (L, index); }
 template<> inline double pull<double> (lua_State *L, const int &index) { return lua_tonumber (L, index); }
 template<> inline bool pull<bool> (lua_State *L, const int &index) { return lua_toboolean (L, index); }
@@ -255,21 +265,21 @@ template<> inline lua_State *pull<lua_State *> (lua_State *L, const int &index) 
 
 // pushing to lua stack
 template<typename T, typename... Args>
-void push (typename std::enable_if<detail::IsUserdata<T>::value && detail::has_lua_functions<T>::value, lua_State>::type *L, Args... args) {
+void push (typename std::enable_if<detail::IsUserdata<T>::value && !std::is_pointer<T>::value, lua_State>::type *L, Args... args) {
     T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
-    detail::CreateMetatable (L, detail::remove_ptr<typename detail::baretype<T>::type>::type::lua_functions);
+    detail::CreateMetatable<T> (L);
     // construct object
     new (obj) T (args...);
     // set metatable for userdata, hence ensuring destruction of the object
     lua_setmetatable (L, -2);
 }
-template<typename T, typename... Args>
-void push (typename std::enable_if<detail::IsUserdata<T>::value && !detail::has_lua_functions<T>::value, lua_State>::type *L, Args... args) {
+template<typename T>
+void push (typename std::enable_if<detail::IsUserdata<T>::value && std::is_pointer<T>::value, lua_State>::type *L, const T &t) {
     T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
-    detail::CreateMetatable (L, Functions<typename detail::remove_ptr<typename detail::baretype<T>::type>::type>::lua_functions);
-    // construct object
-    new (obj) T (args...);
-    // set metatable for userdata, hence ensuring destruction of the object
+    *obj = t;
+    lua_pushlightuserdata (L, t);
+    detail::CreateMetatable<T> (L);
+    lua_remove (L, -2);
     lua_setmetatable (L, -2);
 }
 template<typename T> void push (typename std::enable_if<!detail::IsUserdata<T>::value, lua_State>::type *L, const T &t);

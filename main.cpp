@@ -32,16 +32,19 @@ public:
     Test (Args... args) {
         Print (args...);
         test = sizeof... (args);
+        destroyed = false;
     }
 
     Test (const Test &t) {
         std::cout << "Test::Test (const Test&)" << std::endl;
         test = t.test;
+        destroyed = false;
     }
 
     Test (Test &&t) {
         std::cout << "Test::Test (Test&&)" << std::endl;
         test = t.test;
+        destroyed = false;
     }
 
     Test &operator= (const Test &t) {
@@ -65,6 +68,8 @@ public:
 
     ~Test (void) {
         std::cout << "Test::~Test (void) " << test << std::endl;
+        if (destroyed) std::cout << "DOUBLEFREED" << std::endl;
+        destroyed = true;
     }
 
     int fn (int i, float v) {
@@ -77,7 +82,7 @@ public:
         test = t;
     }
     int GetTest (void) {
-        std::cout << "GetTest" << std::endl;
+        std::cout << "GetTest " << this << std::endl;
         return test;
     }
 
@@ -99,7 +104,7 @@ public:
 
     lua::ManualReturn GetValue (lua_State *L, const std::string &str) {
         if (!str.compare ("test")) {
-            lua::push<Test> (L, *globaltest);
+            lua::push<Test*> (L, globaltest);
         } else {
             lua::push<int> (L, str.length ());
         }
@@ -130,6 +135,8 @@ public:
 
     lua::WeakReference ref;
 
+    bool destroyed;
+
     int test;
 };
 
@@ -140,7 +147,8 @@ lua::functionlist Test::lua_functions = {
         { "StaticTest", [] (lua_State *L) -> int {std::cout << "StaticTest" << std::endl; return 0; }, lua::StaticFunction },
         { "Print", lua::Overload<lua::Function<void(const int&)>::Overload<Test, &Test::Overloaded>,
         lua::Function<void(const std::string&)>::Overload<Test, &Test::Overloaded>,
-        lua::Function<void(const int&, const std::string&)>::Overload<Test, &Test::Overloaded>>::Function },
+        lua::Function<void(const int&, const std::string&)>::Overload<Test, &Test::Overloaded>,
+        lua::Function<void(const Test&)>::Overload<Test, &Test::Overloaded>>::Function },
         { "Print2", lua::Function<void(const int&, const std::string&)>::Wrap<Test, &Test::Overloaded> },
         { lua::Destruct<Test>, lua::Destructor },
         { lua::Overload<lua::Construct<Test>, lua::Construct<Test,int>, lua::Construct<Test,std::string>>::Construct, lua::Constructor },
@@ -186,6 +194,8 @@ int main (int argc, char *argv[])
     Test tmp ("GLOBALTEST");
     tmp.SetTest (600);
     globaltest = &tmp;
+
+    std::cout << "GLOBALTEST ADDR: " << globaltest << std::endl;
 
     lua::push<Test> (L, 42);
     lua_setglobal (L, "test");
