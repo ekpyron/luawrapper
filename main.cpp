@@ -109,7 +109,25 @@ public:
         std::cout << str << " = " << v << std::endl;
     }
 
+    void SetLuaObject (lua::Reference _ref) {
+        std::cout << "Calling set test..." << std::endl;
+        if (_ref.valid ()) {
+            if (_ref.convert<Test> () == this) {
+                std::cout << "Selfreference! Bad bad!" << std::endl;
+                return;
+            }
+            ref = std::move (_ref);
+            ref.convert<Test> ()->SetTest (80);
+        }
+    }
+
+    lua::WeakReference GetLuaObject (void) {
+        return ref;
+    }
+
     static lua::functionlist lua_functions;
+
+    lua::WeakReference ref;
 
     int test;
 };
@@ -128,6 +146,8 @@ lua::functionlist Test::lua_functions = {
         { "__call", lua::Function<void(const Test&)>::Wrap<Test, &Test::Overloaded, 1>, lua::MetaFunction },
         { lua::Function<lua::ManualReturn(lua_State *L, const std::string&)>::Wrap<Test, &Test::GetValue>, lua::IndexFunction },
         { lua::Function<void(const std::string&, int)>::Wrap<Test, &Test::SetValue, 1>, lua::NewIndexFunction },
+        { "SetLuaObject", lua::Function<void(lua::Reference)>::Wrap<Test, &Test::SetLuaObject> },
+        { "GetLuaObject", lua::Function<lua::WeakReference(void)>::Wrap<Test, &Test::GetLuaObject> },
         BaseTest::lua_functions
 };
 

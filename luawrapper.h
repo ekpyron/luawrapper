@@ -38,6 +38,54 @@ namespace lua {
 class function;
 typedef std::initializer_list<function> functionlist;
 
+class Reference {
+public:
+    Reference (void) : L (nullptr), ref (LUA_NOREF) {}
+    Reference (lua_State *_L, const int &r) : L (_L), ref (r) {}
+    Reference (Reference &&r) : L (r.L), ref (r.ref) {
+        r.L = nullptr; r.ref = LUA_NOREF;
+    }
+    Reference (const Reference &r);
+    Reference &operator= (const Reference &r);
+    Reference &operator= (Reference &&r);
+    ~Reference (void);
+    bool valid (void) const {
+        return L != nullptr && ref != LUA_NOREF && ref != LUA_REFNIL;
+    }
+    operator const int &(void) const { return ref; }
+    template<typename T>
+    T *convert (void);
+    void reset (void);
+private:
+    lua_State *L;
+    int ref;
+    friend class WeakReference;
+};
+
+class WeakReference {
+public:
+    WeakReference (void) : L (nullptr), ref (LUA_NOREF) {}
+    WeakReference (lua_State *_L, const int &r) : L (_L), ref (r) {}
+    WeakReference (WeakReference &&r) : L (r.L), ref (r.ref) {
+        r.L = nullptr; r.ref = LUA_NOREF;
+    }
+    WeakReference (const WeakReference &r);
+    WeakReference (const Reference &r);
+    WeakReference &operator= (const WeakReference &r);
+    WeakReference &operator= (WeakReference &&r);
+    ~WeakReference (void);
+    bool valid (void) const {
+        return L != nullptr && ref != LUA_NOREF && ref != LUA_REFNIL;
+    }
+    operator const int &(void) const { return ref; }
+    template<typename T>
+    T *convert (void);
+    void reset (void);
+private:
+    lua_State *L;
+    int ref;
+};
+
 namespace detail {
 
 void AddToTables (lua_State *L, const function *ptr, const size_t &size);
@@ -80,6 +128,8 @@ template<> struct ReturnType<long> { typedef long type; };
 template<> struct ReturnType<unsigned long> { typedef unsigned long type; };
 template<> struct ReturnType<bool> { typedef bool type; };
 template<> struct ReturnType<lua_State*> { typedef lua_State *type; };
+template<> struct ReturnType<Reference> { typedef Reference type; };
+template<> struct ReturnType<WeakReference> { typedef WeakReference type; };
 
 inline bool alltrue (void) { return true; }
 template<typename... Args> bool alltrue (bool u, Args... args) { return u && alltrue (args...); }
@@ -177,6 +227,8 @@ template<> inline bool checkarg<int> (lua_State *L, const int &index) { return l
 template<> inline bool checkarg<unsigned int> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
 template<> inline bool checkarg<std::string> (lua_State *L, const int &index) { return lua_isstring (L, index); }
 template<> inline bool checkarg<lua_State*> (lua_State *L,const int &index) { return true; }
+template<> inline bool checkarg<Reference> (lua_State *L, const int &index) { return true; }
+template<> inline bool checkarg<WeakReference> (lua_State *L, const int &index) { return true; }
 
 // pulling from the lua stack
 template<typename T> inline typename detail::ReturnType<T>::type pull (lua_State *L, const int &index) { return *static_cast<T*> (lua_touserdata (L, index)); }
@@ -191,12 +243,18 @@ template<> inline std::string pull<std::string> (lua_State *L, const int &index)
     const char *str = lua_tolstring (L, index, &len);
     return std::string (str, len);
 }
+template<> inline Reference pull<Reference> (lua_State *L, const int &index) {
+    lua_pushvalue (L, index);
+    return Reference (L, luaL_ref (L, LUA_REGISTRYINDEX));
+}
+template<> inline WeakReference pull<WeakReference> (lua_State *L, const int &index);
 template<> inline lua_State *pull<lua_State *> (lua_State *L, const int &index) { return L; }
 
 // pushing to lua stack
 struct ManualReturn { };
 template<typename T, typename... Args>
-void push (typename std::enable_if<!std::is_arithmetic<T>::value && detail::has_lua_functions<T>::value && !std::is_same<T, ManualReturn>::value && !std::is_same<T, std::string>::value, lua_State>::type *L, Args... args) {
+void push (typename std::enable_if<!std::is_arithmetic<T>::value && detail::has_lua_functions<T>::value && !std::is_same<T, ManualReturn>::value
+                                   && !std::is_same<T, std::string>::value && !std::is_same<T, Reference>::value && !std::is_same<T, WeakReference>::value, lua_State>::type *L, Args... args) {
     T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
     detail::CreateMetatable (L, detail::remove_ptr<typename detail::baretype<T>::type>::type::lua_functions);
     // construct object
@@ -205,7 +263,8 @@ void push (typename std::enable_if<!std::is_arithmetic<T>::value && detail::has_
     lua_setmetatable (L, -2);
 }
 template<typename T, typename... Args>
-void push (typename std::enable_if<!std::is_arithmetic<T>::value && !detail::has_lua_functions<T>::value && !std::is_same<T, ManualReturn>::value && !std::is_same<T, std::string>::value, lua_State>::type *L, Args... args) {
+void push (typename std::enable_if<!std::is_arithmetic<T>::value && !detail::has_lua_functions<T>::value && !std::is_same<T, ManualReturn>::value
+                                   && !std::is_same<T, std::string>::value && !std::is_same<T, Reference>::value && !std::is_same<T, WeakReference>::value, lua_State>::type *L, Args... args) {
     T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
     detail::CreateMetatable (L, Functions<typename detail::remove_ptr<typename detail::baretype<T>::type>::type>::lua_functions);
     // construct object
@@ -213,7 +272,9 @@ void push (typename std::enable_if<!std::is_arithmetic<T>::value && !detail::has
     // set metatable for userdata, hence ensuring destruction of the object
     lua_setmetatable (L, -2);
 }
-template<typename T> void push (typename std::enable_if<std::is_arithmetic<T>::value || std::is_same<T, ManualReturn>::value || std::is_same<T, std::string>::value, lua_State>::type *L, const T &t);
+template<typename T> void push (typename std::enable_if<std::is_arithmetic<T>::value || std::is_same<T, ManualReturn>::value
+                                                        || std::is_same<T, std::string>::value || std::is_same<T, Reference>::value
+                                                        || std::is_same<T, WeakReference>::value, lua_State>::type *L, const T &t);
 template<> inline void push<float> (lua_State *L, const float &v) { lua_pushnumber (L, v); }
 template<> inline void push<double> (lua_State *L, const double &v) { lua_pushnumber (L, v); }
 template<> inline void push<bool> (lua_State *L, const bool &v) { lua_pushboolean (L, v); }
@@ -223,6 +284,8 @@ template<> inline void push<int> (lua_State *L, const int &v) { lua_pushinteger 
 template<> inline void push<unsigned int> (lua_State *L, const unsigned int &v) { lua_pushinteger (L, v); }
 template<> inline void push<std::string> (lua_State *L, const std::string &v) { lua_pushlstring (L, v.data (), v.length ()); }
 template<> inline void push<ManualReturn> (lua_State *L, const ManualReturn &v) { }
+template<> inline void push<Reference> (lua_State *L, const Reference &v) { lua_rawgeti (L, LUA_REGISTRYINDEX, v); }
+template<> inline void push<WeakReference> (lua_State *L, const WeakReference &v);
 
 namespace detail {
 
@@ -528,14 +591,59 @@ public:
     }
     void loadlib (const lua_CFunction &fn, const std::string &name);
 private:
+    static void push_weak_registry (lua_State *L);
     lua_State *L;
-    static int registrydummy;
+    friend class WeakReference;
+    friend WeakReference pull<WeakReference> (lua_State *L, const int &index);
+    friend void push<WeakReference> (lua_State *L, const WeakReference &v);
 };
 
 // Class registration.
 template<typename T>
 void register_class (lua_State *L, const char *name, const functionlist &functions = T::lua_functions) {
     detail::RegisterClass (L, name, functions);
+}
+
+// member implementations for references
+template<typename T>
+T *Reference::convert (void) {
+    if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return nullptr;
+    lua_rawgeti (L, LUA_REGISTRYINDEX, ref);
+    if (!checkarg<T> (L, -1)) {
+        lua_pop (L, 1);
+        return nullptr;
+    }
+    T *ptr = static_cast<T*> (lua_touserdata (L, -1));
+    lua_pop (L, 1);
+    return ptr;
+}
+
+template<typename T>
+T *WeakReference::convert (void) {
+    if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return nullptr;
+    State::push_weak_registry (L);
+    lua_rawgeti (L, -1, ref);
+    if (!checkarg<T> (L, -1)) {
+        lua_pop (L, 2);
+        return nullptr;
+    }
+    T *ptr = static_cast<T*> (lua_touserdata (L, -1));
+    lua_pop (L, 2);
+    return ptr;
+}
+
+template<> inline WeakReference pull<WeakReference> (lua_State *L, const int &index) {
+    State::push_weak_registry (L);
+    lua_pushvalue (L, index);
+    int ref = luaL_ref (L, -2);
+    lua_pop (L, 1);
+    return WeakReference (L, ref);
+}
+
+template<> inline void push<WeakReference> (lua_State *L, const WeakReference &v) {
+    State::push_weak_registry (L);
+    lua_rawgeti (L, -1, v);
+    lua_remove (L, -2);
 }
 
 } /* namespace lua */

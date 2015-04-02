@@ -105,9 +105,20 @@ State::State (void) : L (luaL_newstate ())
 {
     if (L == nullptr) throw std::runtime_error ("Cannot create a lua state.");
 
-    lua_pushlightuserdata (L, &registrydummy);
+    // create empty table
     lua_newtable (L);
-    lua_settable (L, LUA_REGISTRYINDEX);
+
+    // setup metatable for weak references
+    lua_newtable (L);
+    lua_pushliteral (L, "v");
+    lua_setfield (L, -2, "__mode");
+    lua_setmetatable (L, -2);
+
+    // store in registry
+    int ref = luaL_ref (L, LUA_REGISTRYINDEX);
+    if (ref != 1) {
+        throw std::runtime_error ("Unexpected registry key for weak reference table.");
+    }
 }
 
 State::~State (void)
@@ -122,6 +133,101 @@ void State::loadlib (const lua_CFunction &fn, const std::string &name)
     lua_call (L, 1, 0);
 }
 
-int State::registrydummy = 0;
+void State::push_weak_registry (lua_State *L)
+{
+    lua_rawgeti (L, LUA_REGISTRYINDEX, 1);
+}
+
+Reference::Reference (const Reference &r) : L (r.L)
+{
+    if (r.valid ()) {
+        lua_rawgeti (L, LUA_REGISTRYINDEX, r.ref);
+        ref = luaL_ref (L, LUA_REGISTRYINDEX);
+    } else {
+        L = nullptr; ref = LUA_NOREF;
+    }
+}
+Reference &Reference::operator= (const Reference &r)
+{
+    reset ();
+    if (r.valid ()) {
+        L = r.L;
+        lua_rawgeti (L, LUA_REGISTRYINDEX, r.ref);
+        ref = luaL_ref (L, LUA_REGISTRYINDEX);
+    }
+    return *this;
+}
+Reference::~Reference (void)
+{
+    reset ();
+}
+Reference &Reference::operator= (Reference &&r)
+{
+    reset ();
+    L= r.L; r.L = nullptr;
+    ref = r.ref; r.ref = LUA_NOREF;
+    return *this;
+}
+void Reference::reset (void)
+{
+    if (L != nullptr && ref != LUA_NOREF) {
+        luaL_unref (L, LUA_REGISTRYINDEX, ref);
+        L = nullptr; ref = LUA_NOREF;
+    }
+}
+
+WeakReference::WeakReference (const WeakReference &r) : L (r.L)
+{
+    if (r.valid ()) {
+        State::push_weak_registry (L);
+        lua_rawgeti (L, -1, r.ref);
+        ref = luaL_ref (L, -2);
+        lua_pop (L, 1);
+    } else {
+        L = nullptr; ref = LUA_NOREF;
+    }
+}
+WeakReference::WeakReference (const Reference &r) : L (r.L) {
+    if (r.valid ()) {
+        State::push_weak_registry (L);
+        lua_rawgeti (L, LUA_REGISTRYINDEX, r.ref);
+        ref = luaL_ref (L, -2);
+        lua_pop (L, 1);
+    } else {
+        L = nullptr; ref = LUA_NOREF;
+    }
+}
+WeakReference &WeakReference::operator= (const WeakReference &r)
+{
+    reset ();
+    if (r.valid ()) {
+        L = r.L;
+        State::push_weak_registry (L);
+        lua_rawgeti (L, -1, r.ref);
+        ref = luaL_ref (L, -2);
+        lua_pop (L, 1);
+    }
+    return *this;
+}
+WeakReference::~WeakReference (void)
+{
+    reset ();
+}
+WeakReference &WeakReference::operator= (WeakReference &&r)
+{
+    reset ();
+    L= r.L; r.L = nullptr;
+    ref = r.ref; r.ref = LUA_NOREF;
+    return *this;
+}
+void WeakReference::reset (void)
+{
+    if (L != nullptr && ref != LUA_NOREF) {
+        State::push_weak_registry (L);
+        luaL_unref (L, -1, ref);
+        lua_pop (L, 1);
+        L = nullptr; ref = LUA_NOREF;
+    }
+}
 
 } /* namespace lua */
