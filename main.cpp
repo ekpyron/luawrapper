@@ -28,6 +28,7 @@ class Test : public BaseTest
 public:
     template<typename... Args>
     Test (Args... args) {
+        std::cout << "Test::Test(...)" << std::endl;
         Print (args...);
         test = sizeof... (args);
         destroyed = false;
@@ -150,7 +151,7 @@ lua::functionlist Test::lua_functions = {
         { lua::Function<void(const std::string&, int)>::Wrap<Test, &Test::SetValue, 1>, lua::NewIndexFunction },
         { "SetLuaObject", lua::Function<void(lua::Reference)>::Wrap<Test, &Test::SetLuaObject> },
         { "GetLuaObject", lua::Function<lua::WeakReference(void)>::Wrap<Test, &Test::GetLuaObject> },
-        BaseTest::lua_functions
+        lua::BaseClass<BaseTest>
 };
 
 /*namespace lua {

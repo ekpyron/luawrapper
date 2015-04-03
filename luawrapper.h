@@ -26,6 +26,7 @@
 
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 extern "C" {
 #include "lua.h"
 #include "lualib.h"
@@ -91,10 +92,11 @@ private:
 namespace detail {
 
 // private helper functions
-void AddToTables (lua_State *L, const function *ptr, const size_t &size);
+void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs);
 void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
-void CreateMetatable (lua_State *L, const functionlist &functions);
+void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash);
 void RegisterClass (lua_State *L, const char *name, const functionlist &functions);
+bool CheckType (lua_State *L, const int &index, const size_t &typehash);
 // template helpers
 template<typename T>
 struct remove_ptr {
@@ -117,11 +119,11 @@ public:
 };
 template<typename T>
 void CreateMetatable (typename std::enable_if<detail::has_lua_functions<T>::value, lua_State>::type *L) {
-    CreateMetatable (L, detail::remove_ptr<typename detail::baretype<T>::type>::type::lua_functions);
+    CreateMetatable (L, detail::remove_ptr<typename detail::baretype<T>::type>::type::lua_functions, typeid (T).hash_code ());
 }
 template<typename T>
 void CreateMetatable (typename std::enable_if<!detail::has_lua_functions<T>::value, lua_State>::type *L) {
-    CreateMetatable (L, Functions<typename detail::remove_ptr<typename detail::baretype<T>::type>::type>::lua_functions);
+    CreateMetatable (L, Functions<typename detail::remove_ptr<typename detail::baretype<T>::type>::type>::lua_functions, typeid (T).hash_code ());
 }
 
 template<typename T>
@@ -160,6 +162,9 @@ struct ConstructorType {};
 struct DestructorType {};
 struct IndexfunctionType {};
 struct NewindexfunctionType {};
+template<typename T>
+struct BaseClassType {};
+
 
 } /* namespace detail */
 
@@ -170,6 +175,9 @@ static detail::ConstructorType Constructor;
 static detail::DestructorType Destructor;
 static detail::IndexfunctionType IndexFunction;
 static detail::NewindexfunctionType NewIndexFunction;
+
+template<typename T>
+detail::BaseClassType<T> BaseClass (void) {}
 
 // function description
 class function {
@@ -197,8 +205,18 @@ public:
     }
     function (const functionlist &functions) : type (BASECLASS), ptr (functions.begin ()), size (functions.size ()) {
     }
+    template<typename T, typename std::enable_if<!detail::has_lua_functions<T>::value, int>::type* = nullptr>
+    function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), ptr (Functions<T>::lua_functions.begin ()),
+                                                         size (Functions<T>::lua_functions.size ()), hashcode (typeid (T).hash_code ()) {
+
+    }
+    template<typename T, typename std::enable_if<detail::has_lua_functions<T>::value, int>::type* = nullptr>
+    function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), ptr (T::lua_functions.begin ()),
+                                                         size (T::lua_functions.size ()), hashcode (typeid (T).hash_code ()) {
+
+    }
     friend void detail::AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
-    friend void detail::AddToTables (lua_State *L, const function *ptr, const size_t &size);
+    friend void detail::AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs);
 private:
     enum Type {
         MEMBERFUNCTION,
@@ -217,14 +235,14 @@ private:
         struct {
             const function *ptr;
             size_t size;
+            size_t hashcode;
         };
     };
 };
 
 // type checking on lua stack
 template<typename T> inline bool checkarg (lua_State *L, const int &index) {
-    // TODO: perform type checking here
-    return lua_isuserdata (L, index);
+    return lua_isuserdata (L, index) && detail::CheckType (L, index, typeid (T).hash_code ());
 }
 template<> inline bool checkarg<float> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
 template<> inline bool checkarg<double> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
@@ -488,7 +506,7 @@ struct Construct {
     static int Wrap(lua_State *L) {
         T *ptr = static_cast<T *> (lua_newuserdata(L, sizeof(T)));
         lua::detail::Constructor<T, Args...>::construct(L, 2, ptr);
-        lua::detail::CreateMetatable(L, detail::remove_ptr<T>::type::lua_functions);
+        lua::detail::CreateMetatable<T> (L);
         lua_setmetatable(L, -2);
         return 1;
     }
@@ -498,7 +516,7 @@ struct Construct {
             lua_pop (L, 1);
             return false;
         }
-        lua::detail::CreateMetatable(L, detail::remove_ptr<T>::type::lua_functions);
+        lua::detail::CreateMetatable<T> (L);
         lua_setmetatable(L, -2);
         results = 1;
         return true;

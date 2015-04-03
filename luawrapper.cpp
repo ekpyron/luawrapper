@@ -1,9 +1,10 @@
 #include "luawrapper.h"
 
+
 namespace lua {
 namespace detail {
 
-void AddToTables (lua_State *L, const function *ptr, const size_t &size)
+void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs)
 {
     for (auto i = 0; i < size; i++) {
         switch (ptr[i].type) {
@@ -26,11 +27,12 @@ void AddToTables (lua_State *L, const function *ptr, const size_t &size)
                 lua_pushvalue (L, -3);
                 // push closure
                 lua_pushcclosure (L, ptr[i].func, 1);
-                // add to index table
+                // add to meta table
                 lua_setfield (L, -3, ptr[i].name);
                 break;
             case function::BASECLASS:
-                AddToTables (L, ptr[i].ptr, ptr[i].size);
+                typehashs.push_back (ptr[i].hashcode);
+                AddToTables (L, ptr[i].ptr, ptr[i].size, typehashs);
                 break;
             case function::INDEXFUNCTION:
                 // create new metatable
@@ -41,10 +43,33 @@ void AddToTables (lua_State *L, const function *ptr, const size_t &size)
                 lua_pushcclosure (L, ptr[i].func, 1);
                 // add to new metatable
                 lua_setfield (L, -2, "__index");
-                // set metatable
+                // set metatable of index table
                 lua_setmetatable (L, -2);
                 break;
         }
+    }
+}
+
+bool CheckType (lua_State *L, const int &index, const size_t &typehash)
+{
+    static_assert (sizeof (lua_Number) == sizeof (size_t), "lua_Number and size_t have different sizes");
+    lua_getmetatable (L, index);
+    if (lua_isnil (L, -1)) return false;
+    lua_getfield (L, -1, "__ctypes");
+    if (lua_isnil (L, -1)) return false;
+    int i = 1;
+    while (true) {
+        lua_rawgeti (L, -1, i++);
+        if (lua_isnil (L, -1)) {
+            lua_pop (L, 3);
+            return false;
+        }
+        lua_Number v = lua_tonumber (L, -1);
+        if (*reinterpret_cast<size_t*> (&v) == typehash) {
+            lua_pop (L, 3);
+            return true;
+        }
+        lua_pop (L, 1);
     }
 }
 
@@ -66,8 +91,12 @@ void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size)
     }
 }
 
-void CreateMetatable (lua_State *L, const functionlist &functions)
+void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash)
 {
+    static_assert (sizeof (lua_Number) == sizeof (size_t), "lua_Number and size_t have different sizes");
+
+    std::vector<size_t> typehashs;
+    typehashs.push_back (typehash);
     // create metatable
     lua_newtable (L);
 
@@ -75,10 +104,18 @@ void CreateMetatable (lua_State *L, const functionlist &functions)
     lua_newtable (L);
 
     // populate index table
-    AddToTables (L, functions.begin (), functions.size ());
+    AddToTables (L, functions.begin (), functions.size (), typehashs);
 
     // register index table
     lua_setfield (L, -2, "__index");
+
+    // create type table
+    lua_newtable (L);
+    for (auto i = 0; i < typehashs.size (); i++) {
+        lua_pushnumber (L, *reinterpret_cast<lua_Number*> (&typehashs[i]));
+        lua_rawseti (L, -2, i + 1);
+    }
+    lua_setfield (L, -2, "__ctypes");
 }
 
 void RegisterClass (lua_State *L, const char *name, const functionlist &functions)
