@@ -219,7 +219,7 @@ T *push (typename std::enable_if<!std::is_pointer<T>::value, lua_State>::type *L
     T **obj = static_cast<T**> (lua_newuserdata (L, sizeof (T)));
     *obj = new T (std::move(t));
     lua_pushlightuserdata (L, *obj);
-    detail::CreateMetatable<typename std::remove_pointer<T>::type> (L);
+    detail::CreateMetatable<T> (L);
     lua_setmetatable (L, -3);
     lua_pop (L, 1);
     return *obj;
