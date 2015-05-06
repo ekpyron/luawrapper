@@ -27,6 +27,8 @@
 #include <vector>
 #include <stdexcept>
 #include <typeinfo>
+#include <type_traits>
+#include <limits>
 extern "C" {
 #include "lua.h"
 #include "lualib.h"
@@ -41,29 +43,139 @@ struct ManualReturn {};
 template<typename T>
 struct Functions;
 
+class Reference;
+class WeakReference;
+template<typename T>
+class TypedReference;
+
+namespace detail {
+
+// private helper functions
+void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs);
+void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
+bool CheckType (lua_State *L, const int &index, const size_t &typehash);
+void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash);
+template<typename T>
+void CreateMetatable (lua_State *L) {
+    CreateMetatable (L, Functions<T>::value, typeid (T).hash_code ());
+}
+void register_class (lua_State *L, const char *name, const functionlist &functions);
+
+// template helpers
+template<typename T>
+using baretype = std::remove_cv<typename std::remove_reference<T>::type>;
+template<int ...> struct seq { };
+template<int N, int ...S> struct gens : gens<N-1, N-1, S...> { };
+template<int ...S> struct gens<0, S...> { typedef seq<S...> type; };
+template <int N, typename... U> struct tuple_element;
+template <typename U0, typename... U> struct tuple_element<0, U0, U...> { typedef U0 type; };
+template <int N, typename U0, typename... U> struct tuple_element<N, U0, U...> {
+    typedef typename tuple_element<N-1, U...>::type type;
+};
+inline bool alltrue (void) { return true; }
+template<typename... Args> bool alltrue (bool u, Args... args) { return u && alltrue (args...); }
+
+// dummy datatypes for function description constructors
+struct MetafunctionType {};
+struct StaticfunctionType {};
+struct ConstructorType {};
+struct DestructorType {};
+struct IndexfunctionType {};
+struct NewindexfunctionType {};
+template<typename T>
+struct BaseClassType {};
+
+
+} /* namespace detail */
+
+template<typename T, class = void>
+struct Type;
+
 // strong reference to a lua object
 class Reference {
 public:
     Reference (lua_State *L, const int &index);
-    Reference (void) : L (nullptr), ref (LUA_NOREF) {}
-    Reference (Reference &&r) : L (r.L), ref (r.ref) {
-        r.L = nullptr; r.ref = LUA_NOREF;
+    Reference (void) : L (nullptr), ref (LUA_NOREF), ptr (nullptr) {}
+    Reference (Reference &&r) : L (r.L), ref (r.ref), ptr (r.ptr) {
+        r.L = nullptr; r.ref = LUA_NOREF; r.ptr = nullptr;
     }
     Reference (const Reference &r);
+    explicit Reference (const WeakReference &r);
     Reference &operator= (const Reference &r);
-    Reference &operator= (Reference &&r);
+    Reference &operator= (Reference &&r) noexcept;
     ~Reference (void);
     bool valid (void) const {
         return L != nullptr && ref != LUA_NOREF && ref != LUA_REFNIL;
     }
-    operator const int &(void) const { return ref; }
+    bool isnil (void) const;
     template<typename T>
-    T *convert (void);
+    T *convert (void) const;
+    template<typename T>
+    bool checktype (void) const;
     void reset (void);
+    lua_State* const &GetLuaState (void) const { return L; }
+    void push (void) const;
+    bool operator< (const Reference &r) const;
+    bool operator== (const Reference &r) const;
 private:
     lua_State *L;
     int ref;
+    void *ptr;
     friend class WeakReference;
+    template<typename T>
+    friend class TypedReference;
+    template<typename, class>
+    friend struct Type;
+};
+
+// typed reference to a lua object
+template<typename T>
+class TypedReference : public Reference {
+public:
+    TypedReference (lua_State *L, const int &index) : Reference (L, index) {
+        if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+    }
+    TypedReference (void) : Reference () {
+    }
+    TypedReference (TypedReference<T> &&r) : Reference (r) {
+        if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+    }
+    TypedReference (const TypedReference<T> &r) : Reference (r) {
+        if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+    }
+    TypedReference (Reference &&r) : Reference (r) {
+        if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+    }
+    TypedReference (const Reference &r) : Reference (r) {
+        if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+    }
+    operator T* (void) const {
+        return static_cast<T*> (ptr);
+    }
+    T *operator-> (void) {
+        return static_cast<T*> (ptr);
+    }
+    const T *operator-> (void) const {
+        return static_cast<const T*> (ptr);
+    }
+    TypedReference<T> &operator= (const Reference &r) {
+        if (!r.checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+        Reference::operator= (r);
+        return *this;
+    }
+    TypedReference<T> &operator= (Reference &&r) {
+        if (!r.checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+        Reference::operator= (r);
+        return *this;
+    }
+    TypedReference<T> &operator= (const TypedReference<T> &r) {
+        Reference::operator= (r);
+        return *this;
+    }
+    TypedReference<T> &operator= (TypedReference<T> &&r) noexcept {
+        Reference::operator= (r);
+        return *this;
+    }
 };
 
 // weak reference to a lua object
@@ -77,96 +189,149 @@ public:
     WeakReference (const WeakReference &r);
     WeakReference (const Reference &r);
     WeakReference &operator= (const WeakReference &r);
-    WeakReference &operator= (WeakReference &&r);
+    WeakReference &operator= (WeakReference &&r) noexcept;
+    WeakReference &operator= (const Reference &r);
     ~WeakReference (void);
     bool valid (void) const;
     operator const int &(void) const { return ref; }
     template<typename T>
-    T *convert (void);
+    T *convert (void) const;
     void reset (void);
+    lua_State* const &GetLuaState (void) const { return L; }
+    void push (void) const;
 private:
     lua_State *L;
     int ref;
+    friend class Reference;
+    template<typename, class>
+    friend struct Type;
 };
 
-namespace detail {
+// function fetcher
+template<typename T>
+struct Functions : std::integral_constant<functionlist&, std::remove_pointer<typename detail::baretype<T>::type>::type::lua_functions> {
+};
 
-// private helper functions
-void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs);
-void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
-void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash);
-void RegisterClass (lua_State *L, const char *name, const functionlist &functions);
-bool CheckType (lua_State *L, const int &index, const size_t &typehash);
-// template helpers
-template<typename T>
-struct remove_ptr {
-    typedef typename std::remove_pointer<T>::type type;
-};
-template<typename C>
-struct baretype {
-    typedef typename std::remove_cv<typename std::remove_reference<C>::type>::type type;
-};
-template<typename T>
-struct has_lua_functions {
-private:
-    template<typename> struct int_ { typedef int type; };
-    template<typename C, typename int_<decltype(detail::remove_ptr<typename detail::baretype<C>::type>::type::lua_functions)>::type = 0>
-    static char test (int*t=0);
-    template<typename C>
-    static long test (...);
-public:
-    static constexpr bool value = sizeof (test<T>(0)) == sizeof (char);
-};
-template<typename T>
-void CreateMetatable (typename std::enable_if<detail::has_lua_functions<T>::value, lua_State>::type *L) {
-    CreateMetatable (L, detail::remove_ptr<typename detail::baretype<T>::type>::type::lua_functions, typeid (T).hash_code ());
+// pushing to lua stack
+template<typename T, typename... Args>
+T *push (typename std::enable_if<!std::is_pointer<T>::value, lua_State>::type *L, Args... args) {
+    T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
+    detail::CreateMetatable<T> (L);
+    // construct object
+    new (obj) T (args...);
+    // set metatable for userdata, hence ensuring destruction of the object
+    lua_setmetatable (L, -2);
+    return obj;
 }
 template<typename T>
-void CreateMetatable (typename std::enable_if<!detail::has_lua_functions<T>::value, lua_State>::type *L) {
-    CreateMetatable (L, Functions<typename detail::remove_ptr<typename detail::baretype<T>::type>::type>::lua_functions, typeid (T).hash_code ());
+T *push (typename std::enable_if<std::is_pointer<T>::value, lua_State>::type *L, const T &t) {
+    T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
+    *obj = t;
+    lua_pushlightuserdata (L, t);
+    detail::CreateMetatable<T> (L);
+    lua_remove (L, -2);
+    lua_setmetatable (L, -2);
+    return obj;
 }
 
-template<typename T>
-struct IsUserdata {
-    static constexpr bool value = !std::is_arithmetic<T>::value && !std::is_same<T, ManualReturn>::value
-                                  && !std::is_same<T, std::string>::value && !std::is_same<T, Reference>::value
-                                  && !std::is_same<T, WeakReference>::value;
-};
-template<typename R> struct ReturnType { typedef R &type; };
-template<> struct ReturnType<std::string> { typedef std::string type; };
-template<> struct ReturnType<float> { typedef float type; };
-template<> struct ReturnType<double> { typedef double type; };
-template<> struct ReturnType<int> { typedef int type; };
-template<> struct ReturnType<unsigned int> { typedef unsigned int type; };
-template<> struct ReturnType<long> { typedef long type; };
-template<> struct ReturnType<unsigned long> { typedef unsigned long type; };
-template<> struct ReturnType<bool> { typedef bool type; };
-template<> struct ReturnType<lua_State*> { typedef lua_State *type; };
-template<> struct ReturnType<Reference> { typedef Reference type; };
-template<> struct ReturnType<WeakReference> { typedef WeakReference type; };
-inline bool alltrue (void) { return true; }
-template<typename... Args> bool alltrue (bool u, Args... args) { return u && alltrue (args...); }
-template<int ...> struct seq { };
-template<int N, int ...S> struct gens : gens<N-1, N-1, S...> { };
-template<int ...S> struct gens<0, S...> { typedef seq<S...> type; };
-template <int N, typename... U> struct tuple_element;
-template <typename U0, typename... U> struct tuple_element<0, U0, U...> { typedef U0 type; };
-template <int N, typename U0, typename... U> struct tuple_element<N, U0, U...> {
-    typedef typename tuple_element<N-1, U...>::type type;
+// supported types
+template<typename T, class>
+struct Type
+{
+    static T &pull (lua_State *L, const int &index) {
+        // TODO: this will NOT work if the userdata was pushed as a pointer
+        return *static_cast<T*> (lua_touserdata (L, index));
+    }
+    static bool check (lua_State *L, const int &index) {
+        return lua_isnil (L, index) || lua_isuserdata (L, index) && detail::CheckType (L, index, typeid (T).hash_code ());
+    }
+
 };
 
-// dummy datatypes for function description constuctors
-struct MetafunctionType {};
-struct StaticfunctionType {};
-struct ConstructorType {};
-struct DestructorType {};
-struct IndexfunctionType {};
-struct NewindexfunctionType {};
 template<typename T>
-struct BaseClassType {};
+struct Type<T, typename std::enable_if<std::numeric_limits<T>::is_integer>::type>
+{
+    static T pull (lua_State *L, const int &index) {
+        return lua_tointeger (L, index);
+    }
+    static bool check (lua_State *L, const int &index) {
+        return lua_isnumber (L, index);
+    }
+    static void push (lua_State *L, const T &v) {
+        lua_pushinteger (L, v);
+    }
+};
 
+template<typename T>
+struct Type<T, typename std::enable_if<std::is_floating_point<T>::value>::type>
+{
+    static void push (lua_State *L, const T &v) { lua_pushnumber (L, v); }
+    static T pull (lua_State *L, const int &index) { return lua_tonumber (L, index); }
+    static bool check (lua_State *L, const int &index) { return lua_isnumber (L, index); }
+};
 
-} /* namespace detail */
+template<>
+struct Type<lua_State*> {
+    static lua_State *pull (lua_State *L, const int &index) { return L; }
+    static bool check (lua_State *L, const int &index) { return true; }
+};
+
+template<>
+struct Type<bool> {
+    static bool check (lua_State *L, const int &index) { return lua_isboolean (L, index); }
+    static bool pull (lua_State *L, const int &index) { return lua_toboolean (L, index); }
+    static void push (lua_State *L, const bool &v) { lua_pushboolean (L, v); }
+};
+
+template<>
+struct Type<std::string>
+{
+    static bool check (lua_State *L, const int &index) { return lua_isstring (L, index); }
+    static std::string pull (lua_State *L, const int &index) {
+        size_t len = 0;
+        const char *str = lua_tolstring (L, index, &len);
+        return std::string (str, len);
+    }
+    static void push (lua_State *L, const std::string &v) { lua_pushlstring (L, v.data (), v.length ()); }
+};
+
+template<>
+struct Type<ManualReturn>
+{
+    static void push (lua_State *L, const ManualReturn &v) { }
+};
+
+template<>
+struct Type<Reference>
+{
+    static bool check (lua_State *L, const int &index) { return true; }
+    static Reference pull (lua_State *L, const int &index) {
+        return Reference (L, index);
+    }
+    static void push (lua_State *L, const Reference &t) {
+        lua_rawgeti (L, LUA_REGISTRYINDEX, t.ref);
+    }
+};
+
+template<typename T>
+struct Type<TypedReference<T>>
+{
+    static bool check (lua_State *L, const int &index) { return true; }
+    static TypedReference<T> pull (lua_State *L, const int &index) {
+        return TypedReference<T> (L, index);
+    }
+    static void push (lua_State *L, const TypedReference<T> &t) {
+        lua_rawgeti (L, LUA_REGISTRYINDEX, t.ref);
+    }
+};
+
+template<>
+struct Type<WeakReference>
+{
+    static bool check (lua_State *L, const int &index) { return true; }
+    static WeakReference pull (lua_State *L, const int &index);
+    static void push (lua_State *L, const WeakReference &v);
+};
 
 // dummy values for function description constructors
 static detail::MetafunctionType MetaFunction;
@@ -205,14 +370,9 @@ public:
     }
     function (const functionlist &functions) : type (BASECLASS), ptr (functions.begin ()), size (functions.size ()) {
     }
-    template<typename T, typename std::enable_if<!detail::has_lua_functions<T>::value, int>::type* = nullptr>
-    function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), ptr (Functions<T>::lua_functions.begin ()),
-                                                         size (Functions<T>::lua_functions.size ()), hashcode (typeid (T).hash_code ()) {
-
-    }
-    template<typename T, typename std::enable_if<detail::has_lua_functions<T>::value, int>::type* = nullptr>
-    function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), ptr (T::lua_functions.begin ()),
-                                                         size (T::lua_functions.size ()), hashcode (typeid (T).hash_code ()) {
+    template<typename T>
+    function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), ptr (Functions<T>::value.begin ()),
+                                                         size (Functions<T>::value.size ()), hashcode (typeid (T).hash_code ()) {
 
     }
     friend void detail::AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
@@ -240,192 +400,59 @@ private:
     };
 };
 
-// type checking on lua stack
-template<typename T> inline bool checkarg (lua_State *L, const int &index) {
-    return lua_isuserdata (L, index) && detail::CheckType (L, index, typeid (T).hash_code ());
-}
-template<> inline bool checkarg<float> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
-template<> inline bool checkarg<double> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
-template<> inline bool checkarg<bool> (lua_State *L, const int &index) { return lua_isboolean (L, index); }
-template<> inline bool checkarg<long> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
-template<> inline bool checkarg<unsigned long> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
-template<> inline bool checkarg<int> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
-template<> inline bool checkarg<unsigned int> (lua_State *L, const int &index) { return lua_isnumber (L, index); }
-template<> inline bool checkarg<std::string> (lua_State *L, const int &index) { return lua_isstring (L, index); }
-template<> inline bool checkarg<lua_State*> (lua_State *L,const int &index) { return true; }
-template<> inline bool checkarg<Reference> (lua_State *L, const int &index) { return true; }
-template<> inline bool checkarg<WeakReference> (lua_State *L, const int &index) { return true; }
-
-// pulling from the lua stack
-template<typename T> inline typename detail::ReturnType<T>::type pull (lua_State *L, const int &index) {
-    // TODO: this will NOT work if the userdata was pushed as a pointer
-    return *static_cast<T*> (lua_touserdata (L, index));
-}
-template<> inline float pull<float> (lua_State *L, const int &index) { return lua_tonumber (L, index); }
-template<> inline double pull<double> (lua_State *L, const int &index) { return lua_tonumber (L, index); }
-template<> inline bool pull<bool> (lua_State *L, const int &index) { return lua_toboolean (L, index); }
-template<> inline long pull<long> (lua_State *L, const int &index) { return lua_tointeger (L, index); }
-template<> inline unsigned long pull<unsigned long> (lua_State *L, const int &index) { return lua_tointeger (L, index); }
-template<> inline int pull<int> (lua_State *L, const int &index) { return lua_tointeger (L, index); }
-template<> inline unsigned int pull<unsigned int> (lua_State *L, const int &index) { return lua_tointeger (L, index); }
-template<> inline std::string pull<std::string> (lua_State *L, const int &index) { size_t len = 0;
-    const char *str = lua_tolstring (L, index, &len);
-    return std::string (str, len);
-}
-template<> inline Reference pull<Reference> (lua_State *L, const int &index) {
-    return Reference (L, index);
-}
-template<> inline WeakReference pull<WeakReference> (lua_State *L, const int &index);
-template<> inline lua_State *pull<lua_State *> (lua_State *L, const int &index) { return L; }
-
-// pushing to lua stack
-template<typename T, typename... Args>
-void push (typename std::enable_if<detail::IsUserdata<T>::value && !std::is_pointer<T>::value, lua_State>::type *L, Args... args) {
-    T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
-    detail::CreateMetatable<T> (L);
-    // construct object
-    new (obj) T (args...);
-    // set metatable for userdata, hence ensuring destruction of the object
-    lua_setmetatable (L, -2);
-}
-template<typename T>
-void push (typename std::enable_if<detail::IsUserdata<T>::value && std::is_pointer<T>::value, lua_State>::type *L, const T &t) {
-    T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
-    *obj = t;
-    lua_pushlightuserdata (L, t);
-    detail::CreateMetatable<T> (L);
-    lua_remove (L, -2);
-    lua_setmetatable (L, -2);
-}
-template<typename T> void push (typename std::enable_if<!detail::IsUserdata<T>::value, lua_State>::type *L, const T &t);
-template<> inline void push<float> (lua_State *L, const float &v) { lua_pushnumber (L, v); }
-template<> inline void push<double> (lua_State *L, const double &v) { lua_pushnumber (L, v); }
-template<> inline void push<bool> (lua_State *L, const bool &v) { lua_pushboolean (L, v); }
-template<> inline void push<long> (lua_State *L, const long &v) { lua_pushinteger (L, v); }
-template<> inline void push<unsigned long> (lua_State *L, const unsigned long &v) { lua_pushinteger (L, v); }
-template<> inline void push<int> (lua_State *L, const int &v) { lua_pushinteger (L, v); }
-template<> inline void push<unsigned int> (lua_State *L, const unsigned int &v) { lua_pushinteger (L, v); }
-template<> inline void push<std::string> (lua_State *L, const std::string &v) { lua_pushlstring (L, v.data (), v.length ()); }
-template<> inline void push<ManualReturn> (lua_State *L, const ManualReturn &v) { }
-template<> inline void push<Reference> (lua_State *L, const Reference &v) { lua_rawgeti (L, LUA_REGISTRYINDEX, v); }
-template<> inline void push<WeakReference> (lua_State *L, const WeakReference &v);
-
 namespace detail {
 
-// Call helper for functions with return value.
+// Call helper for functions.
 template<typename Retval, typename T, typename... Args>
 struct Caller {
 private:
     template<int N>
-    struct C {
-        typedef typename ReturnType<typename detail::baretype<typename tuple_element<N, Args...>::type>::type>::type rettype;
-        typedef typename detail::baretype<typename tuple_element<N, Args...>::type>::type baretype;
-    };
+    using argtype = Type<typename detail::baretype<typename tuple_element<N, Args...>::type>::type>;
+    using rettype = Type<typename detail::baretype<Retval>::type>;
     template<int N>
     static bool check (lua_State *L, int startindex) {
-        return checkarg<typename C<N>::baretype> (L, startindex + N);
+        return argtype<N>::check (L, startindex + N);
     }
     template<int N>
-    static typename C<N>::rettype get (lua_State *L, int startindex) {
-        return pull<typename C<N>::baretype> (L, startindex + N);
+    static decltype (argtype<N>::pull (nullptr, 0)) get (lua_State *L, int startindex) {
+        return argtype<N>::pull (L, startindex + N);
     }
-    template<int ...S>
-    static Retval call_helper (lua_State *L, int startindex, T *t, Retval (T::*fn) (Args...), seq<S...>) {
-        return (t->*fn) (get<S> (L, startindex)...);
+    template<typename R, typename FN, int ...S>
+    static int do_call (typename std::enable_if<!std::is_same<R, void>::value, lua_State>::type *L,
+                        int startindex, T *t, FN fn, seq<S...>) {
+        rettype::push (L, (t->*fn) (get<S> (L, startindex)...));
+        return 1;
     }
-    template<int ...S>
-    static Retval call_helper (lua_State *L, int startindex, T *t, Retval (T::*fn) (Args...) const, seq<S...>) {
-        return (t->*fn) (get<S> (L, startindex)...);
-    }
-public:
-    static typename std::enable_if<!std::is_void<T>::value, bool>::type try_call (lua_State *L, int &results, int startindex, T *t, Retval (T::*fn) (Args...)) {
-        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
-        push<typename detail::baretype<Retval>::type> (L, call_helper (L, startindex, t, fn, typename gens<sizeof...(Args)>::type ()));
-        results = 1;
-        return true;
-    }
-    static typename std::enable_if<!std::is_void<T>::value, bool>::type try_call (lua_State *L, int &results, int startindex, T *t, Retval (T::*fn) (Args...) const) {
-        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
-        push<typename detail::baretype<Retval>::type> (L, call_helper (L, startindex, t, fn, typename gens<sizeof...(Args)>::type ()));
-        results = 1;
-        return true;
-    }
-    static typename std::enable_if<!std::is_void<T>::value, int>::type call (lua_State *L, int startindex, T *t, Retval (T::*fn) (Args...)) {
-        int results;
-        if (!try_call (L, results, startindex, t, fn))
-            luaL_error (L, "Invalid arguments.");
-        return results;
-    }
-    static typename std::enable_if<!std::is_void<T>::value, int>::type call (lua_State *L, int startindex, T *t, Retval (T::*fn) (Args...) const) {
-        int results;
-        if (!try_call (L, results, startindex, t, fn))
-            luaL_error (L, "Invalid arguments.");
-        return results;
-    }
-private:
-    template<int ...S>
-    static bool checkargs (lua_State *L, int startindex, seq<S...>) {
-        if (lua_gettop (L) != startindex + sizeof... (Args) - 1) return false;
-        return alltrue (check<S> (L, startindex)...);
-    }
-};
-
-// Call helper for functions without return value.
-template<typename T, typename... Args>
-struct Caller<void, T, Args...>
-{
-private:
-    template<int N>
-    struct C {
-        typedef typename ReturnType<typename detail::baretype<typename tuple_element<N, Args...>::type>::type>::type rettype;
-        typedef typename detail::baretype<typename tuple_element<N, Args...>::type>::type baretype;
-    };
-    template<int N>
-    static bool check (lua_State *L, int startindex) {
-        return checkarg<typename C<N>::baretype> (L, startindex + N);
-    }
-    template<int N>
-    static typename C<N>::rettype get (lua_State *L, int startindex) {
-        return pull<typename C<N>::baretype> (L, startindex + N);
-    }
-    template<int ...S>
-    static void call_helper (lua_State *L, int startindex, T *t, void (T::*fn) (Args...), seq<S...>) {
-        return (t->*fn) (get<S> (L, startindex)...);
-    }
-    template<int ...S>
-    static void call_helper (lua_State *L, int startindex, T *t, void (T::*fn) (Args...) const, seq<S...>) {
+    template<typename R, typename FN, int ...S>
+    static int do_call (typename std::enable_if<std::is_same<R, void>::value, lua_State>::type *L,
+                        int startindex, T *t, FN fn, seq<S...>) {
         (t->*fn) (get<S> (L, startindex)...);
+        return 0;
     }
-public:
-    static bool try_call (lua_State *L, int &results, int startindex, T *t, void (T::*fn) (Args...)) {
-        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
-        results = 0;
-        call_helper (L, startindex, t, fn, typename gens<sizeof...(Args)>::type ());
-        return true;
-    }
-    static bool try_call (lua_State *L, int &results, int startindex, T *t, void (T::*fn) (Args...) const) {
-        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
-        results = 0;
-        call_helper (L, startindex, t, fn, typename gens<sizeof...(Args)>::type ());
-        return true;
-    }
-    static int call (lua_State *L, int startindex, T *t, void (T::*fn) (Args...)) {
-        int results;
-        if (!try_call (L, results, startindex, t, fn))
-            luaL_error (L, "Invalid arguments.");
-        return results;
-    }
-    static int call (lua_State *L, int startindex, T *t, void (T::*fn) (Args...) const) {
-        int results;
-        if (!try_call (L, results, startindex, t, fn))
-            luaL_error (L, "Invalid arguments.");
-        return results;
-    }
-private:
     template<int ...S>
     static bool checkargs (lua_State *L, int startindex, seq<S...>) {
         if (lua_gettop (L) != startindex + sizeof... (Args) - 1) return false;
         return alltrue (check<S> (L, startindex)...);
+    }
+public:
+    template<typename FN>
+    static bool try_call (lua_State *L, int &results, int startindex, T *t, FN fn) {
+        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
+        try {
+            results = do_call<Retval> (L, startindex, t, fn, typename gens<sizeof...(Args)>::type ());
+        } catch (std::exception &e) {
+            luaL_error (L, "Lua error: %s", e.what ());
+        } catch (...) {
+            luaL_error (L, "Lua error: unknown exception.");
+        }
+        return true;
+    }
+    template<typename FN>
+    static int call (lua_State *L, int startindex, T *t, FN fn) {
+        int results;
+        if (!try_call (L, results, startindex, t, fn))
+            luaL_error (L, "Invalid arguments.");
+        return results;
     }
 };
 
@@ -434,25 +461,34 @@ template<typename T, typename... Args>
 struct Constructor {
 private:
     template<int N>
-    struct C {
-        typedef typename ReturnType<typename detail::baretype<typename tuple_element<N, Args...>::type>::type>::type rettype;
-        typedef typename detail::baretype<typename tuple_element<N, Args...>::type>::type baretype;
-    };
+    using argtype = Type<typename detail::baretype<typename tuple_element<N, Args...>::type>::type>;
     template<int N>
     static bool check (lua_State *L, int startindex) {
-        return checkarg<typename C<N>::baretype> (L, startindex + N);
+        return argtype<N>::check (L, startindex + N);
     }
     template<int N>
-    static typename C<N>::rettype get (lua_State *L, int startindex) {
-        return pull<typename C<N>::baretype> (L, startindex + N);
+    static decltype (argtype<N>::pull (nullptr, 0)) get (lua_State *L, int startindex) {
+        return argtype<N>::pull (L, startindex + N);
     }
     template<int ...S>
     static void construct_helper (lua_State *L, int startindex, void *ptr, seq<S...>) {
-        new (ptr) T (get<S> (L, startindex)...);
+        try {
+            new (ptr) T (get<S> (L, startindex)...);
+        } catch (std::exception &e) {
+            luaL_error (L, "Lua error: %s", e.what ());
+        } catch (...) {
+            luaL_error (L, "Lua error: unknown exception.");
+        }
     }
     template<int ...S>
     static T *construct_helper (lua_State *L, int startindex, seq<S...>) {
-        return new T (get<S> (L, startindex)...);
+        try {
+            return new T (get<S> (L, startindex)...);
+        } catch (std::exception &e) {
+            luaL_error (L, "Lua error: %s", e.what ());
+        } catch (...) {
+            luaL_error (L, "Lua error: unknown exception.");
+        }
     }
     template<int ...S>
     static bool checkargs (lua_State *L, int startindex, seq<S...>) {
@@ -503,16 +539,42 @@ struct Overload<C, Args...> {
 // Constructor wrappers.
 template<typename T, typename... Args>
 struct Construct {
-    static int Wrap(lua_State *L) {
+    static int Wrap (lua_State *L) {
+        T *ptr = static_cast<T *> (lua_newuserdata (L, sizeof (T)));
+        lua::detail::Constructor<T, Args...>::construct (L, 2, ptr);
+        lua::detail::CreateMetatable<T> (L);
+        lua_setmetatable (L, -2);
+        return 1;
+    }
+
+    static bool Wrap (lua_State *L, int &results) {
+        T *ptr = static_cast<T *> (lua_newuserdata (L, sizeof (T)));
+        if (!lua::detail::Constructor<T, Args...>::try_construct (L, 2, ptr)) {
+            lua_pop (L, 1);
+            return false;
+        }
+        lua::detail::CreateMetatable<T> (L);
+        lua_setmetatable (L, -2);
+        results = 1;
+        return true;
+    }
+};
+template<typename T, typename... Args>
+struct ConstructWithSelfReference {
+    static int Wrap (lua_State *L) {
         T *ptr = static_cast<T *> (lua_newuserdata(L, sizeof(T)));
-        lua::detail::Constructor<T, Args...>::construct(L, 2, ptr);
+        lua_pushvalue (L, -1);
+        lua_insert (L, 2);
+        lua::detail::Constructor<T, Reference, Args...>::construct(L, 2, ptr);
         lua::detail::CreateMetatable<T> (L);
         lua_setmetatable(L, -2);
         return 1;
     }
-    static bool Wrap(lua_State *L, int &results) {
+    static bool Wrap (lua_State *L, int &results) {
         T *ptr = static_cast<T *> (lua_newuserdata(L, sizeof(T)));
-        if (!lua::detail::Constructor<T, Args...>::try_construct(L, 2, ptr)) {
+        lua_pushvalue (L, -1);
+        lua_insert (L, 2);
+        if (!lua::detail::Constructor<T, Reference, Args...>::try_construct(L, 2, ptr)) {
             lua_pop (L, 1);
             return false;
         }
@@ -544,6 +606,21 @@ struct Function<Retval(Args...)> {
         }
     };
     template<typename T, Retval (T::*M) (Args...), int skipargs = 0>
+    static int Wrap (lua_State *L) {
+        T *t = static_cast<T*> (lua_touserdata (L, lua_upvalueindex (1)));
+        return lua::detail::Caller<Retval, T, Args...>::call (L, 1 + skipargs, t, M);
+    }
+};
+template<typename Retval, typename... Args>
+struct Function<Retval(Args...)const> {
+    template<typename T, Retval (T::*M) (Args...) const, int skipargs = 0>
+    struct Overload {
+        static bool Wrap (lua_State *L, int &results) {
+            T *t = static_cast<T*> (lua_touserdata (L, lua_upvalueindex (1)));
+            return lua::detail::Caller<Retval, T, Args...>::try_call (L, results, 1 + skipargs, t, M);
+        }
+    };
+    template<typename T, Retval (T::*M) (Args...) const, int skipargs = 0>
     static int Wrap (lua_State *L) {
         T *t = static_cast<T*> (lua_touserdata (L, lua_upvalueindex (1)));
         return lua::detail::Caller<Retval, T, Args...>::call (L, 1 + skipargs, t, M);
@@ -582,36 +659,36 @@ private:
     static void push_weak_registry (lua_State *L);
     lua_State *L;
     friend class WeakReference;
-    friend WeakReference pull<WeakReference> (lua_State *L, const int &index);
-    friend void push<WeakReference> (lua_State *L, const WeakReference &v);
+    template<typename, class>
+    friend struct Type;
 };
 
 // Class registration.
 template<typename T>
-void register_class (lua_State *L, const char *name, const functionlist &functions = T::lua_functions) {
-    detail::RegisterClass (L, name, functions);
+void register_class (lua_State *L, const char *name) {
+    detail::register_class (L, name, Functions<T>::value);
 }
 
 // member implementations for references
 template<typename T>
-T *Reference::convert (void) {
-    if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return nullptr;
+T *Reference::convert (void) const {
+    return static_cast<T*> (ptr);
+}
+template<typename T>
+bool Reference::checktype (void) const {
+    if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return false;
     lua_rawgeti (L, LUA_REGISTRYINDEX, ref);
-    if (!checkarg<T> (L, -1)) {
-        lua_pop (L, 1);
-        return nullptr;
-    }
-    T *ptr = static_cast<T*> (lua_touserdata (L, -1));
+    bool result = Type<T>::check (L, -1);
     lua_pop (L, 1);
-    return ptr;
+    return result;
 }
 
 template<typename T>
-T *WeakReference::convert (void) {
+T *WeakReference::convert (void) const {
     if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return nullptr;
     State::push_weak_registry (L);
     lua_rawgeti (L, -1, ref);
-    if (!checkarg<T> (L, -1)) {
+    if (!Type<T>::check (L, -1)) {
         lua_pop (L, 2);
         return nullptr;
     }
@@ -620,16 +697,6 @@ T *WeakReference::convert (void) {
     return ptr;
 }
 
-template<> inline WeakReference pull<WeakReference> (lua_State *L, const int &index) {
-    return WeakReference (L, index);
-}
-
-template<> inline void push<WeakReference> (lua_State *L, const WeakReference &v) {
-    State::push_weak_registry (L);
-    lua_rawgeti (L, -1, v);
-    lua_remove (L, -2);
-}
-
 } /* namespace lua */
 
-#endif /* LUAWRAPPER_H */
+#endif /* !defined LUAWRAPPER_H */

@@ -101,7 +101,7 @@ public:
     }
 
     lua::ManualReturn GetValue (lua_State *L, const std::string &str) {
-        lua::push<int> (L, str.length ());
+        lua_pushinteger (L, str.length ());
         return lua::ManualReturn ();
     }
 
