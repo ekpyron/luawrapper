@@ -205,7 +205,7 @@ int main (int argc, char *argv[])
 
     lua::register_class<Test> (L, "Test");
 
-    lua::push<Test> (L, 42);
+    lua::push (L, new Test(42));
     lua_setglobal (L, "test");
 
     std::string line;

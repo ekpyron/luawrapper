@@ -213,19 +213,6 @@ struct Functions : std::integral_constant<functionlist&, std::remove_pointer<typ
 };
 
 // pushing to lua stack
-template<typename T, typename... Args>
-T *push (typename std::enable_if<!std::is_pointer<T>::value, lua_State>::type *L, Args... args) {
-    // construct object
-    T *obj = new T (args...);
-    // the following functions don't throw
-    *static_cast<T**> (lua_newuserdata (L, sizeof (T*))) = obj;
-    lua_pushlightuserdata (L, obj);
-    detail::CreateMetatable<T> (L);
-    // set metatable for userdata, hence ensuring destruction of the object
-    lua_setmetatable (L, -3);
-    lua_pop (L, 1);
-    return obj;
-}
 
 template<typename T>
 T *push (typename std::enable_if<!std::is_pointer<T>::value, lua_State>::type *L, T &&t) {
