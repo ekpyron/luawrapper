@@ -26,7 +26,7 @@
 namespace lua {
 namespace detail {
 
-void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs)
+void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs) noexcept
 {
     for (auto i = 0; i < size; i++) {
         switch (ptr[i].type) {
@@ -95,7 +95,7 @@ bool CheckType (lua_State *L, const int &index, const size_t &typehash)
     }
 }
 
-void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size)
+void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size) noexcept
 {
     for (auto i = 0; i < size; i++) {
         switch (ptr[i].type) {
@@ -113,7 +113,7 @@ void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size)
     }
 }
 
-void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash)
+void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash) noexcept
 {
     static_assert (sizeof (lua_Number) == sizeof (size_t), "lua_Number and size_t have different sizes");
 

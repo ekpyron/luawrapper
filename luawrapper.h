@@ -51,12 +51,12 @@ class TypedReference;
 namespace detail {
 
 // private helper functions
-void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs);
-void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
+void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs) noexcept;
+void AddToStaticTables (lua_State *L, const function *ptr, const size_t &size) noexcept;
 bool CheckType (lua_State *L, const int &index, const size_t &typehash);
-void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash);
+void CreateMetatable (lua_State *L, const functionlist &functions, const size_t &typehash) noexcept;
 template<typename T>
-void CreateMetatable (lua_State *L) {
+void CreateMetatable (lua_State *L) noexcept {
     CreateMetatable (L, Functions<T>::value, typeid (T).hash_code ());
 }
 void register_class (lua_State *L, const char *name, const functionlist &functions);
@@ -215,12 +215,15 @@ struct Functions : std::integral_constant<functionlist&, std::remove_pointer<typ
 // pushing to lua stack
 template<typename T, typename... Args>
 T *push (typename std::enable_if<!std::is_pointer<T>::value, lua_State>::type *L, Args... args) {
-    T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
-    detail::CreateMetatable<T> (L);
     // construct object
-    new (obj) T (args...);
+    T *obj = new T (args...);
+    // the following functions don't throw
+    *static_cast<T**> (lua_newuserdata (L, sizeof (T*))) = obj;
+    lua_pushlightuserdata (L, obj);
+    detail::CreateMetatable<T> (L);
     // set metatable for userdata, hence ensuring destruction of the object
-    lua_setmetatable (L, -2);
+    lua_setmetatable (L, -3);
+    lua_pop (L, 1);
     return obj;
 }
 template<typename T>
@@ -229,8 +232,8 @@ T *push (typename std::enable_if<std::is_pointer<T>::value, lua_State>::type *L,
     *obj = t;
     lua_pushlightuserdata (L, t);
     detail::CreateMetatable<T> (L);
-    lua_remove (L, -2);
-    lua_setmetatable (L, -2);
+    lua_setmetatable (L, -3);
+    lua_pop (L, 1);
     return obj;
 }
 
@@ -239,13 +242,28 @@ template<typename T, class>
 struct Type
 {
     static T &pull (lua_State *L, const int &index) {
-        // TODO: this will NOT work if the userdata was pushed as a pointer
+        return **static_cast<T**> (lua_touserdata (L, index));
+    }
+    static bool check (lua_State *L, const int &index) {
+        return lua_isnil (L, index) || lua_isuserdata (L, index) && detail::CheckType (L, index, typeid (T).hash_code ());
+    }
+    static void push (lua_State *L, T &&v) {
+        lua::push (L, std::move (v));
+    }
+};
+
+template<typename T>
+struct Type<T, typename std::enable_if<std::is_pointer<T>::value>::type>
+{
+    static T &pull (lua_State *L, const int &index) {
         return *static_cast<T*> (lua_touserdata (L, index));
     }
     static bool check (lua_State *L, const int &index) {
         return lua_isnil (L, index) || lua_isuserdata (L, index) && detail::CheckType (L, index, typeid (T).hash_code ());
     }
-
+    static void push (lua_State *L, T &&v) {
+        lua::push (L, std::move (v));
+    }
 };
 
 template<typename T>
@@ -375,8 +393,8 @@ public:
                                                          size (Functions<T>::value.size ()), hashcode (typeid (T).hash_code ()) {
 
     }
-    friend void detail::AddToStaticTables (lua_State *L, const function *ptr, const size_t &size);
-    friend void detail::AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs);
+    friend void detail::AddToStaticTables (lua_State *L, const function *ptr, const size_t &size) noexcept;
+    friend void detail::AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs) noexcept;
 private:
     enum Type {
         MEMBERFUNCTION,
@@ -471,16 +489,6 @@ private:
         return argtype<N>::pull (L, startindex + N);
     }
     template<int ...S>
-    static void construct_helper (lua_State *L, int startindex, void *ptr, seq<S...>) {
-        try {
-            new (ptr) T (get<S> (L, startindex)...);
-        } catch (std::exception &e) {
-            luaL_error (L, "Lua error: %s", e.what ());
-        } catch (...) {
-            luaL_error (L, "Lua error: unknown exception.");
-        }
-    }
-    template<int ...S>
     static T *construct_helper (lua_State *L, int startindex, seq<S...>) {
         try {
             return new T (get<S> (L, startindex)...);
@@ -504,15 +512,6 @@ public:
         T *t = try_construct (L, startindex);
         if (t == nullptr) luaL_error (L, "Invalid arguments.");
         return t;
-    }
-    static bool try_construct (lua_State *L, int startindex, T *ptr) {
-        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
-        construct_helper (L, startindex, ptr, typename gens<sizeof...(Args)>::type ());
-        return true;
-    }
-    static void construct (lua_State *L, int startindex, T *ptr) {
-        if (!try_construct (L, startindex, ptr))
-            luaL_error (L, "Invalid arguments.");
     }
 };
 
@@ -540,21 +539,26 @@ struct Overload<C, Args...> {
 template<typename T, typename... Args>
 struct Construct {
     static int Wrap (lua_State *L) {
-        T *ptr = static_cast<T *> (lua_newuserdata (L, sizeof (T)));
-        lua::detail::Constructor<T, Args...>::construct (L, 2, ptr);
+        T **ptr = static_cast<T**> (lua_newuserdata (L, sizeof (T*)));
+        *ptr = lua::detail::Constructor<T, Args...>::construct (L, 2);
+        lua_pushlightuserdata (L, *ptr);
         lua::detail::CreateMetatable<T> (L);
-        lua_setmetatable (L, -2);
+        lua_setmetatable (L, -3);
+        lua_pop (L, 1);
         return 1;
     }
 
     static bool Wrap (lua_State *L, int &results) {
-        T *ptr = static_cast<T *> (lua_newuserdata (L, sizeof (T)));
-        if (!lua::detail::Constructor<T, Args...>::try_construct (L, 2, ptr)) {
+        T **ptr = static_cast<T**> (lua_newuserdata (L, sizeof (T*)));
+        *ptr = lua::detail::Constructor<T, Args...>::try_construct (L, 2);
+        if (*ptr == nullptr) {
             lua_pop (L, 1);
             return false;
         }
+        lua_pushlightuserdata (L, *ptr);
         lua::detail::CreateMetatable<T> (L);
-        lua_setmetatable (L, -2);
+        lua_setmetatable (L, -3);
+        lua_pop (L, 1);
         results = 1;
         return true;
     }
@@ -562,24 +566,29 @@ struct Construct {
 template<typename T, typename... Args>
 struct ConstructWithSelfReference {
     static int Wrap (lua_State *L) {
-        T *ptr = static_cast<T *> (lua_newuserdata(L, sizeof(T)));
+        T **ptr = static_cast<T**> (lua_newuserdata(L, sizeof(T*)));
         lua_pushvalue (L, -1);
         lua_insert (L, 2);
-        lua::detail::Constructor<T, Reference, Args...>::construct(L, 2, ptr);
+        *ptr = lua::detail::Constructor<T, Reference, Args...>::construct(L, 2);
+        lua_pushlightuserdata (L, *ptr);
         lua::detail::CreateMetatable<T> (L);
-        lua_setmetatable(L, -2);
+        lua_setmetatable(L, -3);
+        lua_pop (L, 1);
         return 1;
     }
     static bool Wrap (lua_State *L, int &results) {
-        T *ptr = static_cast<T *> (lua_newuserdata(L, sizeof(T)));
+        T **ptr = static_cast<T**> (lua_newuserdata(L, sizeof(T*)));
         lua_pushvalue (L, -1);
         lua_insert (L, 2);
-        if (!lua::detail::Constructor<T, Reference, Args...>::try_construct(L, 2, ptr)) {
+        *ptr = lua::detail::Constructor<T, Reference, Args...>::try_construct(L, 2);
+        if (*ptr == nullptr) {
             lua_pop (L, 1);
             return false;
         }
+        lua_pushlightuserdata (L, *ptr);
         lua::detail::CreateMetatable<T> (L);
-        lua_setmetatable(L, -2);
+        lua_setmetatable(L, -3);
+        lua_pop (L, 1);
         results = 1;
         return true;
     }
@@ -587,9 +596,9 @@ struct ConstructWithSelfReference {
 
 // Destructor wrappers.
 template<typename T>
-int Destruct (lua_State *L) {
+int Destruct (lua_State *L) noexcept {
     T *obj = static_cast<T*> (lua_touserdata (L, lua_upvalueindex (1)));
-    obj->~T ();
+    delete obj;
     return 0;
 }
 

@@ -125,6 +125,18 @@ public:
         return ref;
     }
 
+    Test *CreateTest (void) {
+        return new Test(99);
+    }
+
+    void SetFloat (const float &v) {
+        std::cout << "SetFloat: " << v << std::endl;
+    }
+
+    void PassTestPtr (const Test *ptr) {
+        std::cout << "PassTestPtr: " << ptr->test << std::endl;
+    }
+
     static lua::functionlist lua_functions;
 
     lua::WeakReference ref;
@@ -151,6 +163,9 @@ lua::functionlist Test::lua_functions = {
         { lua::Function<void(const std::string&, int)>::Wrap<Test, &Test::SetValue, 1>, lua::NewIndexFunction },
         { "SetLuaObject", lua::Function<void(lua::Reference)>::Wrap<Test, &Test::SetLuaObject> },
         { "GetLuaObject", lua::Function<lua::WeakReference(void)>::Wrap<Test, &Test::GetLuaObject> },
+        { "CreateTest", lua::Function<Test*(void)>::Wrap<Test, &Test::CreateTest> },
+        { "PassTestPtr", lua::Function<void(const Test*)>::Wrap<Test, &Test::PassTestPtr> },
+        { "SetFloat", lua::Function<void(const float&)>::Wrap<Test, &Test::SetFloat> },
         lua::BaseClass<BaseTest>
 };
 
