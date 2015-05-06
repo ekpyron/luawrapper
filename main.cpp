@@ -125,6 +125,10 @@ public:
         return ref;
     }
 
+    Test ReturnTest (void) {
+        return Test(100, "ReturnTest");
+    }
+
     Test *CreateTest (void) {
         return new Test(99);
     }
@@ -166,6 +170,7 @@ lua::functionlist Test::lua_functions = {
         { "CreateTest", lua::Function<Test*(void)>::Wrap<Test, &Test::CreateTest> },
         { "PassTestPtr", lua::Function<void(const Test*)>::Wrap<Test, &Test::PassTestPtr> },
         { "SetFloat", lua::Function<void(const float&)>::Wrap<Test, &Test::SetFloat> },
+        { "ReturnTest", lua::Function<Test(void)>::Wrap<Test, &Test::ReturnTest> },
         lua::BaseClass<BaseTest>
 };
 
