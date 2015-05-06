@@ -231,7 +231,7 @@ T *push (typename std::enable_if<std::is_pointer<T>::value, lua_State>::type *L,
     T *obj = static_cast<T*> (lua_newuserdata (L, sizeof (T)));
     *obj = t;
     lua_pushlightuserdata (L, t);
-    detail::CreateMetatable<T> (L);
+    detail::CreateMetatable<typename std::remove_pointer<T>::type> (L);
     lua_setmetatable (L, -3);
     lua_pop (L, 1);
     return obj;
@@ -259,7 +259,7 @@ struct Type<T, typename std::enable_if<std::is_pointer<T>::value>::type>
         return *static_cast<T*> (lua_touserdata (L, index));
     }
     static bool check (lua_State *L, const int &index) {
-        return lua_isnil (L, index) || lua_isuserdata (L, index) && detail::CheckType (L, index, typeid (T).hash_code ());
+        return lua_isnil (L, index) || lua_isuserdata (L, index) && detail::CheckType (L, index, typeid (typename std::remove_pointer<T>::type).hash_code ());
     }
     static void push (lua_State *L, T &&v) {
         lua::push (L, std::move (v));
