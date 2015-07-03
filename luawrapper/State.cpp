@@ -45,9 +45,20 @@ State::State (void) : L (luaL_newstate ())
     }
 }
 
+State::State (State &&state) : L (state.L)
+{
+    state.L = nullptr;
+}
+
 State::~State (void)
 {
-    lua_close (L);
+    if (L) lua_close (L);
+}
+
+State &State::operator= (State &&state) noexcept
+{
+    L = state.L; state.L = nullptr;
+    return *this;
 }
 
 void State::loadlib (const lua_CFunction &fn, const std::string &name)

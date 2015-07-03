@@ -26,8 +26,10 @@ namespace lua {
 class State {
 public:
     State (void);
+    State (State &&state);
     State (const State&) = delete;
     ~State (void);
+    State &operator= (State &&state) noexcept;
     State &operator= (const State&) = delete;
     operator lua_State * (void) const {
         return L;
