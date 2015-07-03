@@ -26,7 +26,18 @@ namespace lua {
 template<typename T>
 T *push (detail::if_not_pointer_t<T, lua_State> *L, T &&t) {
     T **obj = static_cast<T**> (lua_newuserdata (L, sizeof (T)));
-    *obj = new T (std::move(t));
+    *obj = new T (std::move (t));
+    lua_pushlightuserdata (L, *obj);
+    detail::CreateMetatable<T> (L);
+    lua_setmetatable (L, -3);
+    lua_pop (L, 1);
+    return *obj;
+}
+
+template<typename T, typename... Args>
+T *push (detail::if_not_pointer_t<T, lua_State> *L, Args... args) {
+    T **obj = static_cast<T**> (lua_newuserdata (L, sizeof (T)));
+    *obj = new T (args...);
     lua_pushlightuserdata (L, *obj);
     detail::CreateMetatable<T> (L);
     lua_setmetatable (L, -3);
