@@ -23,9 +23,10 @@
  */
 namespace lua {
 
+void register_class (lua_State *L, const char *name, const functionlist &functions);
 template<typename T>
 void register_class (lua_State *L, const char *name) {
-    detail::register_class (L, name, Functions<T>::value);
+    register_class (L, name, Functions<T>::value);
 }
 
 } /* namespace lua */

@@ -149,6 +149,7 @@ void CreateMetatable (lua_State *L, const functionlist &functions, const size_t 
     }
     lua_setfield (L, -2, "__ctypes");
 }
+} /* namespace detail */
 
 void register_class (lua_State *L, const char *name, const functionlist &functions)
 {
@@ -158,7 +159,7 @@ void register_class (lua_State *L, const char *name, const functionlist &functio
     // create metatable
     lua_newtable (L);
 
-    AddToStaticTables (L, functions.begin (), functions.size ());
+    detail::AddToStaticTables (L, functions.begin (), functions.size ());
 
     // set metatable
     lua_setmetatable (L, -2);
@@ -167,5 +168,4 @@ void register_class (lua_State *L, const char *name, const functionlist &functio
     lua_setfield (L, LUA_GLOBALSINDEX, name);
 }
 
-} /* namespace detail */
 } /* namespace lua */

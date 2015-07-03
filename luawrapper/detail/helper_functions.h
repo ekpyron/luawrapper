@@ -37,7 +37,6 @@ template<typename T>
 void CreateMetatable (lua_State *L, bool destructor = true) noexcept {
     CreateMetatable (L, Functions<T>::value, typeid (T).hash_code (), destructor);
 }
-void register_class (lua_State *L, const char *name, const functionlist &functions);
 inline int abs_index (lua_State *L, const int &index) {
     return index > 0 || index <= LUA_REGISTRYINDEX ? index : lua_gettop (L) + index + 1;
 }
