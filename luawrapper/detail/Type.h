@@ -21,6 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <list>
+#include <deque>
+#include <map>
+#include <unordered_map>
+
 namespace lua {
 
 template<typename T, class = void>
@@ -147,6 +152,118 @@ struct Type<WeakReference>
     static bool check (lua_State *L, const int &index) { return true; }
     static WeakReference pull (lua_State *L, const int &index);
     static void push (lua_State *L, const WeakReference &v);
+};
+
+template<typename T>
+struct IsSequence {
+    static constexpr bool value = false;
+};
+
+template<typename T, typename A>
+struct IsSequence<std::vector<T, A>> {
+    static constexpr bool value = true;
+};
+
+template<typename T, typename A>
+struct IsSequence<std::list<T, A>> {
+    static constexpr bool value = true;
+};
+
+template<typename T, typename A>
+struct IsSequence<std::deque<T, A>> {
+    static constexpr bool value = true;
+};
+
+template<typename C>
+struct Type<C, typename std::enable_if<IsSequence<C>::value>::type>
+{
+    static bool check (lua_State *L, const int &_index) {
+        int index = detail::abs_index (L, _index);
+        if (!lua_istable (L, index)) return false;
+        lua_pushnil (L);
+        while (lua_next (L, index) != 0) {
+            if (!Type<typename C::value_type>::check (L, -1)) {
+                lua_pop (L, 2);
+                return false;
+            }
+            lua_pop (L, 1);
+        }
+        return true;
+    }
+    static C pull (lua_State *L, const int &_index) {
+        int index = detail::abs_index (L, _index);
+        C v;
+        lua_pushnil (L);
+        while (lua_next (L, index) != 0) {
+            v.emplace_back (Type<typename C::value_type>::pull (L, -1));
+            lua_pop (L, 1);
+        }
+        return v;
+    }
+    static void push (lua_State *L, const C &v) {
+        lua_newtable (L);
+        auto i = 1;
+        auto it = v.begin ();
+        while (it != v.end ()) {
+            Type<typename C::value_type>::push (L, *it++);
+            lua_rawseti (L, -2, i++);
+        }
+    }
+};
+
+template<typename T>
+struct IsMap {
+    static constexpr bool value = false;
+};
+
+template<typename K, typename T, typename A>
+struct IsMap<std::unordered_map<K, T, A>> {
+    static constexpr bool value = true;
+};
+
+template<typename K, typename T, typename A>
+struct IsMap<std::map<K, T, A>> {
+    static constexpr bool value = true;
+};
+
+template<typename C>
+struct Type<C, typename std::enable_if<IsMap<C>::value>::type>
+{
+private:
+    using K = typename C::key_type;
+    using T = typename C::mapped_type;
+public:
+    static bool check (lua_State *L, const int &_index) {
+        int index = detail::abs_index (L, _index);
+        if (!lua_istable (L, index)) return false;
+        lua_pushnil (L);
+        while (lua_next (L, index) != 0) {
+            if (!Type<K>::check (L, -2) || !Type<T>::check (L, -1)) {
+                lua_pop (L, 2);
+                return false;
+            }
+            lua_pop (L, 1);
+        }
+        return true;
+    }
+    static C pull (lua_State *L, const int &_index) {
+        int index = detail::abs_index (L, _index);
+        C v;
+        lua_pushnil (L);
+        while (lua_next (L, index) != 0) {
+            v.emplace (Type<K>::pull (L, -2), Type<T>::pull (L, -1));
+            lua_pop (L, 1);
+        }
+        return v;
+    }
+    static void push (lua_State *L, const C &v) {
+        lua_newtable (L);
+        for (auto it = v.begin (); it != v.end (); it++) {
+            Type<K>::push (L, it.first);
+            Type<T>::push (L, it.second);
+            lua_rawset (L, -3);
+        }
+    }
 };
 
 } /* namespace lua */
