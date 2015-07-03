@@ -27,3 +27,7 @@ add_test (references references)
 add_executable (overloads overloads.cpp)
 target_link_libraries (overloads luawrapper)
 add_test (overloads overloads)
+
+add_executable (construct construct.cpp)
+target_link_libraries (construct luawrapper)
+add_test (construct construct)

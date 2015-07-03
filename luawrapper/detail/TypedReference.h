@@ -46,10 +46,10 @@ public:
         return convert<T> ();
     }
     ptrtype operator-> (void) {
-        return static_cast<ptrtype> (ptr);
+        return static_cast<ptrtype> (*ptr);
     }
     const ptrtype operator-> (void) const {
-        return static_cast<const ptrtype> (ptr);
+        return static_cast<const ptrtype> (*ptr);
     }
     TypedReference<T> &operator= (const Reference &r) {
         if (!r.checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");

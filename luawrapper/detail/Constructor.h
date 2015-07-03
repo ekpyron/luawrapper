@@ -56,6 +56,7 @@ template<typename T, typename... Args>
 struct ConstructorWithSelfReference {
     static bool Wrap (lua_State *L, int &results) {
         T **ptr = static_cast<T**> (lua_newuserdata(L, sizeof(T*)));
+        *ptr = nullptr;
         lua_pushvalue (L, -1);
         lua_insert (L, 2);
         try {

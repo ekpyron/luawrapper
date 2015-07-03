@@ -30,7 +30,7 @@ Reference::Reference (lua_State *_L, const int &index) : L (_L), ptr (nullptr)
     lua_pushvalue (L, index);
     ref = luaL_ref(L, LUA_REGISTRYINDEX);
     if (lua_isuserdata (L, index)) {
-        ptr = *reinterpret_cast<void**> (lua_touserdata (L, index));
+        ptr = reinterpret_cast<void**> (lua_touserdata (L, index));
     }
 }
 
@@ -49,7 +49,7 @@ Reference::Reference (const WeakReference &r) : L (r.L), ptr (nullptr), ref (LUA
     if (L) {
         r.push ();
         if (lua_isuserdata (L, -1)) {
-            ptr = *reinterpret_cast<void**> (lua_touserdata (L, -1));
+            ptr = reinterpret_cast<void**> (lua_touserdata (L, -1));
         }
         ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }

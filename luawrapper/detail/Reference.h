@@ -60,7 +60,7 @@ public:
 private:
     lua_State *L;
     int ref;
-    void *ptr;
+    void **ptr;
     friend class WeakReference;
     template<typename T>
     friend class TypedReference;
@@ -84,7 +84,7 @@ inline decltype(Type<T, void>::pull (nullptr, 0)) Reference::convert (void) cons
 
 template<typename T, detail::if_pointer_t<T>*>
 T Reference::convert (void) const {
-    return static_cast<T> (ptr);
+    return *reinterpret_cast<T*const> (ptr);
 }
 
 template<typename T, detail::if_not_pointer_t<T>*>
