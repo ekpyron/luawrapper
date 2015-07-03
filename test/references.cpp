@@ -49,13 +49,13 @@ public:
     static void F15 (lua::WeakReference &&ref) {
         check (ref.checktype<Object> () && ref.convert<Object*> ()->checkstate (EXPLICIT, false, false, 215), "object weak reference by rvalue reference");
     }
-    static void F16 (lua::TypedReference<Object*> ref) {
+    static void F16 (lua::TypedReference<Object> ref) {
         check (ref->checkstate (EXPLICIT, false, false, 216), "object typed reference by value");
     }
-    static void F17 (const lua::TypedReference<Object*> &ref) {
+    static void F17 (const lua::TypedReference<Object> &ref) {
         check (ref->checkstate (EXPLICIT, false, false, 217), "object typed reference by const reference");
     }
-    static void F18 (lua::TypedReference<Object*> &&ref) {
+    static void F18 (lua::TypedReference<Object> &&ref) {
         check (ref->checkstate (EXPLICIT, false, false, 218), "object typed reference by rvalue reference");
     }
     static lua::Reference F19 (lua_State *L) {
@@ -88,9 +88,9 @@ lua::functionlist Test::lua_functions = {
         { "F13", lua::Function<void(lua::WeakReference)>::Wrap<&Test::F13>, lua::STATIC_FUNCTION },
         { "F14", lua::Function<void(const lua::WeakReference&)>::Wrap<&Test::F14>, lua::STATIC_FUNCTION },
         { "F15", lua::Function<void(lua::WeakReference&&)>::Wrap<&Test::F15>, lua::STATIC_FUNCTION },
-        { "F16", lua::Function<void(lua::TypedReference<Object*>)>::Wrap<&Test::F16>, lua::STATIC_FUNCTION },
-        { "F17", lua::Function<void(const lua::TypedReference<Object*>&)>::Wrap<&Test::F17>, lua::STATIC_FUNCTION },
-        { "F18", lua::Function<void(lua::TypedReference<Object*>&&)>::Wrap<&Test::F18>, lua::STATIC_FUNCTION },
+        { "F16", lua::Function<void(lua::TypedReference<Object>)>::Wrap<&Test::F16>, lua::STATIC_FUNCTION },
+        { "F17", lua::Function<void(const lua::TypedReference<Object>&)>::Wrap<&Test::F17>, lua::STATIC_FUNCTION },
+        { "F18", lua::Function<void(lua::TypedReference<Object>&&)>::Wrap<&Test::F18>, lua::STATIC_FUNCTION },
         { "F19", lua::Function<lua::Reference(lua_State*)>::Wrap<&Test::F19>, lua::STATIC_FUNCTION },
         { "F20", lua::Function<void(lua::TypedReference<Object*>)>::Wrap<&Test::F20>, lua::STATIC_FUNCTION },
 };

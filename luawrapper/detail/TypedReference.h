@@ -26,6 +26,7 @@ namespace lua {
 template<typename T>
 class TypedReference : public Reference {
 public:
+    typedef typename std::conditional<std::is_pointer<T>::value, T, T*>::type ptrtype;
     TypedReference (lua_State *L, const int &index) : Reference (L, index) {
         if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
     }
@@ -44,11 +45,11 @@ public:
     operator T (void) const {
         return convert<T> ();
     }
-    T operator-> (void) {
-        return static_cast<T> (ptr);
+    ptrtype operator-> (void) {
+        return static_cast<ptrtype> (ptr);
     }
-    const T operator-> (void) const {
-        return static_cast<const T> (ptr);
+    const ptrtype operator-> (void) const {
+        return static_cast<const ptrtype> (ptr);
     }
     TypedReference<T> &operator= (const Reference &r) {
         if (!r.checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
