@@ -84,7 +84,7 @@ inline decltype(Type<T, void>::pull (nullptr, 0)) Reference::convert (void) cons
 
 template<typename T, detail::if_pointer_t<T>*>
 T Reference::convert (void) const {
-    return *reinterpret_cast<T*const> (ptr);
+    return (ptr != nullptr) ? (*reinterpret_cast<T*const> (ptr)) : nullptr;
 }
 
 template<typename T, detail::if_not_pointer_t<T>*>
