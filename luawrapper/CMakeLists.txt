@@ -12,4 +12,7 @@ add_library (luawrapper ${SHARED_FLAG} helper_functions.cpp Reference.cpp WeakRe
 
 target_link_libraries (luawrapper ${LUA_LIBRARIES})
 target_include_directories (luawrapper SYSTEM PUBLIC ${LUA_INCLUDE_DIR})
-target_include_directories (luawrapper INTERFACE ..)
+target_include_directories (luawrapper INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:include/>)
+
+install (TARGETS luawrapper DESTINATION lib EXPORT luawrapper)
+install (EXPORT luawrapper DESTINATION lib/luawrapper)
