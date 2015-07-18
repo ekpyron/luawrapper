@@ -17,7 +17,7 @@ target_include_directories (luawrapper SYSTEM PUBLIC ${LUA_INCLUDE_DIR})
 target_include_directories (luawrapper INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:include/>)
 
 install (TARGETS luawrapper DESTINATION lib EXPORT luawrapper)
-install (EXPORT luawrapper DESTINATION lib/luawrapper)
+install (EXPORT luawrapper DESTINATION lib/cmake/luawrapper)
 file (GLOB DETAIL_HEADERS detail/*.h)
 install (FILES luawrapper.h DESTINATION include/luawrapper)
 install (FILES ${DETAIL_HEADERS} DESTINATION include/luawrapper/detail)
