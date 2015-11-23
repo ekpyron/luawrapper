@@ -21,38 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef LUAWRAPPER_H
-#define LUAWRAPPER_H
 
-#include <vector>
-#include <stdexcept>
-#include <limits>
-#include <iostream>
-#include <initializer_list>
-#include <typeinfo>
-#include <type_traits>
-extern "C" {
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
-}
-#include "detail/template_helpers.h"
-#include "detail/helper_functions.h"
-#include "detail/State.h"
-#include "detail/Reference.h"
-#include "detail/TypedReference.h"
-#include "detail/WeakReference.h"
-#include "detail/functions.h"
-#include "detail/push.h"
-#include "detail/Type.h"
-#include "detail/ArgHandler.h"
-#include "detail/CallHelper.h"
-#include "detail/Function.h"
-#include "detail/ConstructHelper.h"
-#include "detail/Constructor.h"
-#include "detail/Overload.h"
-#include "detail/pull.h"
-#include "detail/register.h"
-#include "detail/StackGuard.h"
+namespace lua {
 
-#endif /* !defined LUAWRAPPER_H */
+class StackGuard {
+public:
+    StackGuard (lua_State *_L) : L (_L), index (lua_gettop (_L)) {}
+    StackGuard (const StackGuard&) = delete;
+    ~StackGuard (void) { lua_settop (L, index); }
+    StackGuard &operator= (const StackGuard&) = delete;
+private:
+    lua_State *L;
+    int index;
+};
+
+} /* namespace lua */
