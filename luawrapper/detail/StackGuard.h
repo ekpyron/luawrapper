@@ -30,6 +30,8 @@ public:
     StackGuard (const StackGuard&) = delete;
     ~StackGuard (void) { lua_settop (L, index); }
     StackGuard &operator= (const StackGuard&) = delete;
+    operator lua_State* (void) { return L; }
+    operator const lua_State* (void) const { return L; }
 private:
     lua_State *L;
     int index;
