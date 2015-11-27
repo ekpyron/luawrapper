@@ -64,7 +64,7 @@ void AddToTables (lua_State *L, const function *ptr, const size_t &size, std::ve
                 break;
             case function::BASECLASS:
                 typehashs.push_back (ptr[i].hashcode);
-                AddToTables (L, ptr[i].ptr, ptr[i].size, typehashs, false);
+                AddToTables (L, ptr[i].listptr->begin (), ptr[i].listptr->size (), typehashs, false);
                 break;
             case function::INDEXFUNCTION:
                 // create new metatable

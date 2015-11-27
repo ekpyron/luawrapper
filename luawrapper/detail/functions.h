@@ -24,7 +24,7 @@
 namespace lua {
 
 template<typename T>
-struct Functions : std::integral_constant<functionlist&,
+struct Functions : std::integral_constant<const functionlist&,
         std::remove_pointer<typename detail::baretype<T>::type>::type::lua_functions> { };
 
 struct ManualReturn { };
@@ -71,8 +71,7 @@ public:
     function (const lua_CFunction &_func, detail::NewindexfunctionType)
             : type (METAFUNCTION), func (_func), name ("__newindex") { }
     template<typename T>
-    function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), ptr (Functions<T>::value.begin ()),
-                                                         size (Functions<T>::value.size ()),
+    function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), listptr (&Functions<T>::value),
                                                          hashcode (typeid (T).hash_code ()) { }
     friend void detail::AddToStaticTables (lua_State *L, const function *ptr, const size_t &size) noexcept;
     friend void detail::AddToTables (lua_State *L, const function *ptr, const size_t &size, std::vector<size_t> &typehashs, bool destructor) noexcept;
@@ -93,8 +92,7 @@ private:
             lua_CFunction func;
         };
         struct {
-            const function *ptr;
-            size_t size;
+            const functionlist *listptr;
             size_t hashcode;
         };
     };
