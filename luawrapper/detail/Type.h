@@ -70,7 +70,7 @@ struct Type<T, typename std::enable_if<std::is_pointer<T>::value>::type>
 };
 
 template<typename T>
-struct Type<T, typename std::enable_if<!std::is_abstract<T>::value && std::numeric_limits<T>::is_integer>::type>
+struct Type<T, typename std::enable_if<!std::is_same<T, bool>::value && std::is_integral<T>::value>::type>
 {
     static T pull (lua_State *L, const int &index) {
         return lua_tointeger (L, index);
