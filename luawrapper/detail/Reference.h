@@ -57,6 +57,9 @@ public:
     void push (void) const;
     bool operator< (const Reference &r) const;
     bool operator== (const Reference &r) const;
+    bool operator!= (const Reference &r) const {
+        return !operator== (r);
+    }
 private:
     lua_State *L;
     int ref;
