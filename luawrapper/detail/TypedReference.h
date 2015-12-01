@@ -42,8 +42,11 @@ public:
     TypedReference (const Reference &r) : Reference (r) {
         if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
     }
-    operator T (void) const {
+    operator typename std::enable_if<!std::is_abstract<T>::value, T>::type (void) const {
         return convert<T> ();
+    }
+    operator typename std::enable_if<std::is_abstract<T>::value, T*>::type (void) const {
+        return convert<T*> ();
     }
     ptrtype operator-> (void) {
         return static_cast<ptrtype> (*ptr);
