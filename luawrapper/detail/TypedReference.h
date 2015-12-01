@@ -42,8 +42,8 @@ public:
     TypedReference (const Reference &r) : Reference (r) {
         if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
     }
-    operator typename std::conditional<std::is_abstract<T>::value, T*, T>::type (void) const {
-        return convert<typename std::conditional<std::is_abstract<T>::value, T*, T>::type> ();
+    operator typename std::conditional<std::is_pointer<T>::value, T, decltype(Type<T, void>::pull (nullptr, 0))>::type (void) const {
+        return convert<typename std::conditional<std::is_pointer<T>::value, T, decltype(Type<T, void>::pull (nullptr, 0))>::type> ();
     }
     ptrtype operator-> (void) {
         return static_cast<ptrtype> (*ptr);
