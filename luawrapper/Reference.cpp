@@ -25,7 +25,7 @@
 
 namespace lua {
 
-Reference::Reference (lua_State *_L, const int &index) : L (_L), ptr (nullptr)
+Reference::Reference (lua_State *L_, const int &index) : L (L_), ptr (nullptr)
 {
     lua_pushvalue (L, index);
     ref = luaL_ref(L, LUA_REGISTRYINDEX);

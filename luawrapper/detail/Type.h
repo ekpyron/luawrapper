@@ -39,8 +39,8 @@ struct Type
     }
     static bool check (lua_State *L, const int &index) {
         return lua_isnil (L, index)
-               || lua_isuserdata (L, index)
-                  && detail::CheckType (L, index, typeid (T).hash_code ());
+               || (lua_isuserdata (L, index)
+                  && detail::CheckType (L, index, typeid (T).hash_code ()));
     }
     static void push (lua_State *L, T &&v) {
         lua::push (L, std::move (v));
@@ -58,8 +58,8 @@ struct Type<T, typename std::enable_if<std::is_pointer<T>::value>::type>
     }
     static bool check (lua_State *L, const int &index) {
         return lua_isnil (L, index)
-               || lua_isuserdata (L, index)
-                  && detail::CheckType (L, index, typeid (typename std::remove_pointer<T>::type).hash_code ());
+               || (lua_isuserdata (L, index)
+                  && detail::CheckType (L, index, typeid (typename std::remove_pointer<T>::type).hash_code ()));
     }
     static void push (lua_State *L, T &&v) {
         lua::push (L, std::move (v));

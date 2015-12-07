@@ -36,8 +36,10 @@ private:
             return new T (ArgHandler<S, argtype<S>>::get (L, startindex)...);
         } catch (std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
+            return nullptr;
         } catch (...) {
             luaL_error (L, "Lua error: unknown exception.");
+            return nullptr;
         }
     }
     template<int ...S>

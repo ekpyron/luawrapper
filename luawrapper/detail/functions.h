@@ -51,7 +51,7 @@ static detail::IndexfunctionType INDEX_FUNCTION;
 static detail::NewindexfunctionType NEW_INDEX_FUNCTION;
 
 template<typename T>
-detail::BaseClassType<T> BaseClass (void) {}
+detail::BaseClassType<T> BaseClass (void) { return detail::BaseClassType<T> (); }
 
 // function description
 class function {

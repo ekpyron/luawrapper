@@ -26,7 +26,7 @@
 namespace lua {
 
 
-WeakReference::WeakReference (lua_State *_L, const int &index) : L (_L)
+WeakReference::WeakReference (lua_State *L_, const int &index) : L (L_)
 {
     State::push_weak_registry (L);
     lua_pushvalue (L, index < 0 ? index - 1 : index);

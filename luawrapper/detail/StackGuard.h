@@ -26,7 +26,7 @@ namespace lua {
 
 class StackGuard {
 public:
-    StackGuard (lua_State *_L) : L (_L), index (lua_gettop (_L)) {}
+    StackGuard (lua_State *L_) : L (L_), index (lua_gettop (L_)) {}
     StackGuard (const StackGuard&) = delete;
     ~StackGuard (void) { lua_settop (L, index); }
     StackGuard &operator= (const StackGuard&) = delete;

@@ -4,6 +4,7 @@
 #include <luawrapper/luawrapper.h>
 #include <iostream>
 #include <vector>
+#include <cstdlib>
 
 static bool verbose = true;
 
