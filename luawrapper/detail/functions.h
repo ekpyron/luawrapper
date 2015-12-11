@@ -57,19 +57,19 @@ detail::BaseClassType<T> BaseClass (void) { return detail::BaseClassType<T> (); 
 class function {
 public:
     function (const char *_name, const lua_CFunction &_func)
-            : type (MEMBERFUNCTION), func (_func), name (_name) { }
+            : type (MEMBERFUNCTION), name (_name), func (_func) { }
     function (const char *_name, const lua_CFunction &_func, detail::MetafunctionType)
-            : type (METAFUNCTION), func (_func), name (_name) { }
+            : type (METAFUNCTION), name (_name), func (_func) { }
     function (const char *_name, const lua_CFunction &_func, detail::StaticfunctionType)
-            : type (STATICFUNCTION), func (_func), name (_name) { }
+            : type (STATICFUNCTION), name (_name), func (_func) { }
     function (const lua_CFunction &_func, detail::ConstructorType)
-            : type (CONSTRUCTOR), func (_func), name (nullptr) { }
+            : type (CONSTRUCTOR), name (nullptr), func (_func) { }
     function (const lua_CFunction &_func, detail::DestructorType)
-            : type (DESTRUCTOR), func (_func), name (nullptr) { }
+            : type (DESTRUCTOR), name (nullptr), func (_func) { }
     function (const lua_CFunction &_func, detail::IndexfunctionType)
-            : type (INDEXFUNCTION), func (_func), name (nullptr) { }
+            : type (INDEXFUNCTION), name (nullptr), func (_func) { }
     function (const lua_CFunction &_func, detail::NewindexfunctionType)
-            : type (METAFUNCTION), func (_func), name ("__newindex") { }
+            : type (METAFUNCTION), name ("__newindex"), func (_func) { }
     template<typename T>
     function (detail::BaseClassType<T> (*func) (void)) : type (BASECLASS), listptr (&Functions<T>::value),
                                                          hashcode (typeid (T).hash_code ()) { }
