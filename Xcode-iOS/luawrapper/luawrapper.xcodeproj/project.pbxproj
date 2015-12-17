@@ -319,8 +319,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
+					../../..,
 					"$(inherited)",
-					/Users/dubbilan/Documents/CathodeNew/cathode_fat,
 				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
@@ -337,8 +337,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
+					../../..,
 					"$(inherited)",
-					/Users/dubbilan/Documents/CathodeNew/cathode_fat,
 				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
@@ -370,6 +370,7 @@
 				FB9271F01C2070A900CB5A75 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
