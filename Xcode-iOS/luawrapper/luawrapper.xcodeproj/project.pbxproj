@@ -33,6 +33,16 @@
 		FB9272281C20734800CB5A75 /* WeakReference.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272081C2070E200CB5A75 /* WeakReference.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		FB93F71B1C2306570075FEFC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FB9271D21C2070A900CB5A75 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FB93F7171C2306490075FEFC;
+			remoteInfo = luajit;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		FB9271D81C2070A900CB5A75 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -172,6 +182,23 @@
 		};
 /* End PBXHeadersBuildPhase section */
 
+/* Begin PBXLegacyTarget section */
+		FB93F7171C2306490075FEFC /* luajit */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = FB93F71A1C2306490075FEFC /* Build configuration list for PBXLegacyTarget "luajit" */;
+			buildPhases = (
+			);
+			buildToolPath = ./luajit.sh;
+			buildWorkingDirectory = "";
+			dependencies = (
+			);
+			name = luajit;
+			passBuildSettingsInEnvironment = 1;
+			productName = luajit;
+		};
+/* End PBXLegacyTarget section */
+
 /* Begin PBXNativeTarget section */
 		FB9271D91C2070A900CB5A75 /* luawrapper */ = {
 			isa = PBXNativeTarget;
@@ -185,6 +212,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				FB93F71C1C2306570075FEFC /* PBXTargetDependency */,
 			);
 			name = luawrapper;
 			productName = luawrapper;
@@ -203,6 +231,9 @@
 					FB9271D91C2070A900CB5A75 = {
 						CreatedOnToolsVersion = 6.4;
 					};
+					FB93F7171C2306490075FEFC = {
+						CreatedOnToolsVersion = 6.4;
+					};
 				};
 			};
 			buildConfigurationList = FB9271D51C2070A900CB5A75 /* Build configuration list for PBXProject "luawrapper" */;
@@ -218,6 +249,7 @@
 			projectRoot = "";
 			targets = (
 				FB9271D91C2070A900CB5A75 /* luawrapper */,
+				FB93F7171C2306490075FEFC /* luajit */,
 			);
 		};
 /* End PBXProject section */
@@ -235,6 +267,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FB93F71C1C2306570075FEFC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FB93F7171C2306490075FEFC /* luajit */;
+			targetProxy = FB93F71B1C2306570075FEFC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		FB9271EC1C2070A900CB5A75 /* Debug */ = {
@@ -351,6 +391,36 @@
 			};
 			name = Release;
 		};
+		FB93F7181C2306490075FEFC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		FB93F7191C2306490075FEFC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -371,6 +441,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		FB93F71A1C2306490075FEFC /* Build configuration list for PBXLegacyTarget "luajit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB93F7181C2306490075FEFC /* Debug */,
+				FB93F7191C2306490075FEFC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 /* End XCConfigurationList section */
 	};
