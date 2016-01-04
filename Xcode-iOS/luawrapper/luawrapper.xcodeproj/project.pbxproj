@@ -362,6 +362,7 @@
 					../../..,
 					"$(inherited)",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DLUAJIT_FRAMEWORK_HEADERS",
@@ -380,6 +381,7 @@
 					../../..,
 					"$(inherited)",
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DLUAJIT_FRAMEWORK_HEADERS",
@@ -449,6 +451,7 @@
 				FB93F7191C2306490075FEFC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
