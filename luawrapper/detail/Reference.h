@@ -92,7 +92,8 @@ T Reference::convert (void) const {
 
 template<typename T, detail::if_not_pointer_t<T>*>
 bool Reference::checktype (void) const {
-    if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return false;
+    // TODO: think about whether true is good for those values
+    if (L == nullptr || ref == LUA_NOREF || ref == LUA_REFNIL) return true;
     lua_rawgeti (L, LUA_REGISTRYINDEX, ref);
     bool result = Type<T, void>::check (L, -1);
     lua_pop (L, 1);
