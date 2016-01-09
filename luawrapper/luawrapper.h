@@ -32,9 +32,15 @@
 #include <typeinfo>
 #include <type_traits>
 extern "C" {
+#ifdef LUAJIT_FRAMEWORK_HEADERS
+#include <LuaJIT/lua.h>
+#include <LuaJIT/lualib.h>
+#include <LuaJIT/lauxlib.h>
+#else
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
+#endif
 }
 #include "detail/template_helpers.h"
 #include "detail/helper_functions.h"

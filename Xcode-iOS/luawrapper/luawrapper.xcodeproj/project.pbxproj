@@ -1,0 +1,459 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FB92720F1C2070E200CB5A75 /* helper_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FB9272091C2070E200CB5A75 /* helper_functions.cpp */; };
+		FB9272101C2070E200CB5A75 /* Reference.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FB92720C1C2070E200CB5A75 /* Reference.cpp */; };
+		FB9272111C2070E200CB5A75 /* State.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FB92720D1C2070E200CB5A75 /* State.cpp */; };
+		FB9272121C2070E200CB5A75 /* WeakReference.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FB92720E1C2070E200CB5A75 /* WeakReference.cpp */; };
+		FB9272141C20728D00CB5A75 /* LuaJIT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB9272131C20728D00CB5A75 /* LuaJIT.framework */; };
+		FB9272161C20733A00CB5A75 /* luawrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = FB92720B1C2070E200CB5A75 /* luawrapper.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272171C20734800CB5A75 /* ArgHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271F71C2070E200CB5A75 /* ArgHandler.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272181C20734800CB5A75 /* CallHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271F81C2070E200CB5A75 /* CallHelper.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272191C20734800CB5A75 /* ConstructHelper.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271F91C2070E200CB5A75 /* ConstructHelper.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB92721A1C20734800CB5A75 /* Constructor.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271FA1C2070E200CB5A75 /* Constructor.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB92721B1C20734800CB5A75 /* Function.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271FB1C2070E200CB5A75 /* Function.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB92721C1C20734800CB5A75 /* functions.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271FC1C2070E200CB5A75 /* functions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB92721D1C20734800CB5A75 /* helper_functions.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271FD1C2070E200CB5A75 /* helper_functions.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB92721E1C20734800CB5A75 /* Overload.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271FE1C2070E200CB5A75 /* Overload.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB92721F1C20734800CB5A75 /* pull.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9271FF1C2070E200CB5A75 /* pull.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272201C20734800CB5A75 /* push.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272001C2070E200CB5A75 /* push.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272211C20734800CB5A75 /* Reference.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272011C2070E200CB5A75 /* Reference.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272221C20734800CB5A75 /* register.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272021C2070E200CB5A75 /* register.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272231C20734800CB5A75 /* StackGuard.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272031C2070E200CB5A75 /* StackGuard.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272241C20734800CB5A75 /* State.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272041C2070E200CB5A75 /* State.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272251C20734800CB5A75 /* template_helpers.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272051C2070E200CB5A75 /* template_helpers.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272261C20734800CB5A75 /* Type.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272061C2070E200CB5A75 /* Type.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272271C20734800CB5A75 /* TypedReference.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272071C2070E200CB5A75 /* TypedReference.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FB9272281C20734800CB5A75 /* WeakReference.h in Headers */ = {isa = PBXBuildFile; fileRef = FB9272081C2070E200CB5A75 /* WeakReference.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FB93F71B1C2306570075FEFC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FB9271D21C2070A900CB5A75 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FB93F7171C2306490075FEFC;
+			remoteInfo = luajit;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FB9271D81C2070A900CB5A75 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		FB9271DA1C2070A900CB5A75 /* libluawrapper.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libluawrapper.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB9271F71C2070E200CB5A75 /* ArgHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ArgHandler.h; sourceTree = "<group>"; };
+		FB9271F81C2070E200CB5A75 /* CallHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CallHelper.h; sourceTree = "<group>"; };
+		FB9271F91C2070E200CB5A75 /* ConstructHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConstructHelper.h; sourceTree = "<group>"; };
+		FB9271FA1C2070E200CB5A75 /* Constructor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Constructor.h; sourceTree = "<group>"; };
+		FB9271FB1C2070E200CB5A75 /* Function.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Function.h; sourceTree = "<group>"; };
+		FB9271FC1C2070E200CB5A75 /* functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = functions.h; sourceTree = "<group>"; };
+		FB9271FD1C2070E200CB5A75 /* helper_functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = helper_functions.h; sourceTree = "<group>"; };
+		FB9271FE1C2070E200CB5A75 /* Overload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Overload.h; sourceTree = "<group>"; };
+		FB9271FF1C2070E200CB5A75 /* pull.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pull.h; sourceTree = "<group>"; };
+		FB9272001C2070E200CB5A75 /* push.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = push.h; sourceTree = "<group>"; };
+		FB9272011C2070E200CB5A75 /* Reference.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reference.h; sourceTree = "<group>"; };
+		FB9272021C2070E200CB5A75 /* register.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = register.h; sourceTree = "<group>"; };
+		FB9272031C2070E200CB5A75 /* StackGuard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StackGuard.h; sourceTree = "<group>"; };
+		FB9272041C2070E200CB5A75 /* State.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = State.h; sourceTree = "<group>"; };
+		FB9272051C2070E200CB5A75 /* template_helpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = template_helpers.h; sourceTree = "<group>"; };
+		FB9272061C2070E200CB5A75 /* Type.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Type.h; sourceTree = "<group>"; };
+		FB9272071C2070E200CB5A75 /* TypedReference.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TypedReference.h; sourceTree = "<group>"; };
+		FB9272081C2070E200CB5A75 /* WeakReference.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WeakReference.h; sourceTree = "<group>"; };
+		FB9272091C2070E200CB5A75 /* helper_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = helper_functions.cpp; sourceTree = "<group>"; };
+		FB92720B1C2070E200CB5A75 /* luawrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luawrapper.h; sourceTree = "<group>"; };
+		FB92720C1C2070E200CB5A75 /* Reference.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Reference.cpp; sourceTree = "<group>"; };
+		FB92720D1C2070E200CB5A75 /* State.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = State.cpp; sourceTree = "<group>"; };
+		FB92720E1C2070E200CB5A75 /* WeakReference.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WeakReference.cpp; sourceTree = "<group>"; };
+		FB9272131C20728D00CB5A75 /* LuaJIT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = LuaJIT.framework; path = ../../../LuaJIT.framework; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FB9271D71C2070A900CB5A75 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB9272141C20728D00CB5A75 /* LuaJIT.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		FB9271D11C2070A900CB5A75 = {
+			isa = PBXGroup;
+			children = (
+				FB9272131C20728D00CB5A75 /* LuaJIT.framework */,
+				FB9271F41C2070E200CB5A75 /* luawrapper */,
+				FB9271DB1C2070A900CB5A75 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FB9271DB1C2070A900CB5A75 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FB9271DA1C2070A900CB5A75 /* libluawrapper.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FB9271F41C2070E200CB5A75 /* luawrapper */ = {
+			isa = PBXGroup;
+			children = (
+				FB9271F61C2070E200CB5A75 /* detail */,
+				FB9272091C2070E200CB5A75 /* helper_functions.cpp */,
+				FB92720B1C2070E200CB5A75 /* luawrapper.h */,
+				FB92720C1C2070E200CB5A75 /* Reference.cpp */,
+				FB92720D1C2070E200CB5A75 /* State.cpp */,
+				FB92720E1C2070E200CB5A75 /* WeakReference.cpp */,
+			);
+			name = luawrapper;
+			path = ../../luawrapper;
+			sourceTree = "<group>";
+		};
+		FB9271F61C2070E200CB5A75 /* detail */ = {
+			isa = PBXGroup;
+			children = (
+				FB9271F71C2070E200CB5A75 /* ArgHandler.h */,
+				FB9271F81C2070E200CB5A75 /* CallHelper.h */,
+				FB9271F91C2070E200CB5A75 /* ConstructHelper.h */,
+				FB9271FA1C2070E200CB5A75 /* Constructor.h */,
+				FB9271FB1C2070E200CB5A75 /* Function.h */,
+				FB9271FC1C2070E200CB5A75 /* functions.h */,
+				FB9271FD1C2070E200CB5A75 /* helper_functions.h */,
+				FB9271FE1C2070E200CB5A75 /* Overload.h */,
+				FB9271FF1C2070E200CB5A75 /* pull.h */,
+				FB9272001C2070E200CB5A75 /* push.h */,
+				FB9272011C2070E200CB5A75 /* Reference.h */,
+				FB9272021C2070E200CB5A75 /* register.h */,
+				FB9272031C2070E200CB5A75 /* StackGuard.h */,
+				FB9272041C2070E200CB5A75 /* State.h */,
+				FB9272051C2070E200CB5A75 /* template_helpers.h */,
+				FB9272061C2070E200CB5A75 /* Type.h */,
+				FB9272071C2070E200CB5A75 /* TypedReference.h */,
+				FB9272081C2070E200CB5A75 /* WeakReference.h */,
+			);
+			path = detail;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		FB9272151C20732A00CB5A75 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB9272161C20733A00CB5A75 /* luawrapper.h in Headers */,
+				FB9272171C20734800CB5A75 /* ArgHandler.h in Headers */,
+				FB9272181C20734800CB5A75 /* CallHelper.h in Headers */,
+				FB9272191C20734800CB5A75 /* ConstructHelper.h in Headers */,
+				FB92721A1C20734800CB5A75 /* Constructor.h in Headers */,
+				FB92721B1C20734800CB5A75 /* Function.h in Headers */,
+				FB92721C1C20734800CB5A75 /* functions.h in Headers */,
+				FB92721D1C20734800CB5A75 /* helper_functions.h in Headers */,
+				FB92721E1C20734800CB5A75 /* Overload.h in Headers */,
+				FB92721F1C20734800CB5A75 /* pull.h in Headers */,
+				FB9272201C20734800CB5A75 /* push.h in Headers */,
+				FB9272211C20734800CB5A75 /* Reference.h in Headers */,
+				FB9272221C20734800CB5A75 /* register.h in Headers */,
+				FB9272231C20734800CB5A75 /* StackGuard.h in Headers */,
+				FB9272241C20734800CB5A75 /* State.h in Headers */,
+				FB9272251C20734800CB5A75 /* template_helpers.h in Headers */,
+				FB9272261C20734800CB5A75 /* Type.h in Headers */,
+				FB9272271C20734800CB5A75 /* TypedReference.h in Headers */,
+				FB9272281C20734800CB5A75 /* WeakReference.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXLegacyTarget section */
+		FB93F7171C2306490075FEFC /* luajit */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = FB93F71A1C2306490075FEFC /* Build configuration list for PBXLegacyTarget "luajit" */;
+			buildPhases = (
+			);
+			buildToolPath = ./luajit.sh;
+			buildWorkingDirectory = "";
+			dependencies = (
+			);
+			name = luajit;
+			passBuildSettingsInEnvironment = 1;
+			productName = luajit;
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXNativeTarget section */
+		FB9271D91C2070A900CB5A75 /* luawrapper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FB9271EE1C2070A900CB5A75 /* Build configuration list for PBXNativeTarget "luawrapper" */;
+			buildPhases = (
+				FB9271D61C2070A900CB5A75 /* Sources */,
+				FB9271D71C2070A900CB5A75 /* Frameworks */,
+				FB9271D81C2070A900CB5A75 /* CopyFiles */,
+				FB9272151C20732A00CB5A75 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FB93F71C1C2306570075FEFC /* PBXTargetDependency */,
+			);
+			name = luawrapper;
+			productName = luawrapper;
+			productReference = FB9271DA1C2070A900CB5A75 /* libluawrapper.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FB9271D21C2070A900CB5A75 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0640;
+				ORGANIZATIONNAME = Ekpyrosis;
+				TargetAttributes = {
+					FB9271D91C2070A900CB5A75 = {
+						CreatedOnToolsVersion = 6.4;
+					};
+					FB93F7171C2306490075FEFC = {
+						CreatedOnToolsVersion = 6.4;
+					};
+				};
+			};
+			buildConfigurationList = FB9271D51C2070A900CB5A75 /* Build configuration list for PBXProject "luawrapper" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = FB9271D11C2070A900CB5A75;
+			productRefGroup = FB9271DB1C2070A900CB5A75 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FB9271D91C2070A900CB5A75 /* luawrapper */,
+				FB93F7171C2306490075FEFC /* luajit */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FB9271D61C2070A900CB5A75 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB92720F1C2070E200CB5A75 /* helper_functions.cpp in Sources */,
+				FB9272121C2070E200CB5A75 /* WeakReference.cpp in Sources */,
+				FB9272101C2070E200CB5A75 /* Reference.cpp in Sources */,
+				FB9272111C2070E200CB5A75 /* State.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FB93F71C1C2306570075FEFC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FB93F7171C2306490075FEFC /* luajit */;
+			targetProxy = FB93F71B1C2306570075FEFC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		FB9271EC1C2070A900CB5A75 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.4;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		FB9271ED1C2070A900CB5A75 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		FB9271EF1C2070A900CB5A75 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					../../..,
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DLUAJIT_FRAMEWORK_HEADERS",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = /usr/local/include/luawrapper;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		FB9271F01C2070A900CB5A75 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					../../..,
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DLUAJIT_FRAMEWORK_HEADERS",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = /usr/local/include/luawrapper;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		FB93F7181C2306490075FEFC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		FB93F7191C2306490075FEFC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FB9271D51C2070A900CB5A75 /* Build configuration list for PBXProject "luawrapper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB9271EC1C2070A900CB5A75 /* Debug */,
+				FB9271ED1C2070A900CB5A75 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FB9271EE1C2070A900CB5A75 /* Build configuration list for PBXNativeTarget "luawrapper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB9271EF1C2070A900CB5A75 /* Debug */,
+				FB9271F01C2070A900CB5A75 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FB93F71A1C2306490075FEFC /* Build configuration list for PBXLegacyTarget "luajit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB93F7181C2306490075FEFC /* Debug */,
+				FB93F7191C2306490075FEFC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FB9271D21C2070A900CB5A75 /* Project object */;
+}
