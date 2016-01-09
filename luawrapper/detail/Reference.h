@@ -101,7 +101,7 @@ bool Reference::checktype (void) const {
 
 template<typename T, detail::if_pointer_t<T>*>
 bool Reference::checktype (void) const {
-    if (ref == LUA_REFNIL) return true;
+    if (ref == LUA_REFNIL || ref == LUA_NOREF) return true;
     return checktype<typename std::remove_pointer<T>::type> ();
 }
 
