@@ -47,15 +47,15 @@ struct Constructor
         return true;
     }
     static int Wrap (lua_State *L) {
-        int result;
+        int results;
         try {
             Wrap (L, results);
         } catch (std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
         } catch (...) {
-            luaL_error (L, "Lua error: unknown exception", e.what ());
+            luaL_error (L, "Lua error: unknown exception");
         }
-        return result;
+        return results;
     }
 };
 template<typename T, typename... Args>
@@ -91,7 +91,7 @@ struct ConstructorWithSelfReference {
         } catch (std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
         } catch (...) {
-            luaL_error (L, "Lua error: unknown exception", e.what ());
+            luaL_error (L, "Lua error: unknown exception");
         }
         return results;
     }
