@@ -48,7 +48,13 @@ struct Constructor
     }
     static int Wrap (lua_State *L) {
         int result;
-        Wrap (L, result);
+        try {
+            Wrap (L, results);
+        } catch (std::exception &e) {
+            luaL_error (L, "Lua error: %s", e.what ());
+        } catch (...) {
+            luaL_error (L, "Lua error: unknown exception", e.what ());
+        }
         return result;
     }
 };
@@ -80,7 +86,13 @@ struct ConstructorWithSelfReference {
     }
     static int Wrap (lua_State *L) {
         int results;
-        Wrap (L, results);
+        try {
+            Wrap (L, results);
+        } catch (std::exception &e) {
+            luaL_error (L, "Lua error: %s", e.what ());
+        } catch (...) {
+            luaL_error (L, "Lua error: unknown exception", e.what ());
+        }
         return results;
     }
 };

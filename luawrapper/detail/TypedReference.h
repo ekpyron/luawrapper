@@ -28,7 +28,7 @@ class TypedReference : public Reference {
 public:
     typedef typename std::conditional<std::is_pointer<T>::value, T, T*>::type ptrtype;
     TypedReference (lua_State *L, const int &index) : Reference (L, index) {
-        if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+        if (!checktype<T> ()) throw Exception (L, 1, "lua value has invalid type.");
     }
     TypedReference (void) : Reference () {
     }
@@ -37,10 +37,10 @@ public:
     TypedReference (const TypedReference<T> &r) : Reference (r) {
     }
     TypedReference (Reference &&r) : Reference (r) {
-        if (r.ref != LUA_REFNIL && !checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+        if (r.ref != LUA_REFNIL && !checktype<T> ()) throw Exception (L, 1, "lua value has invalid type.");
     }
     TypedReference (const Reference &r) : Reference (r) {
-        if (!checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+        if (!checktype<T> ()) throw Exception (L, 1, "lua value has invalid type.");
     }
     operator typename std::conditional<std::is_integral<T>::value, T, T&>::type (void) const {
         return convert<typename std::conditional<std::is_integral<T>::value, T, T&>::type> ();
@@ -52,12 +52,12 @@ public:
         return static_cast<const ptrtype> (*ptr);
     }
     TypedReference<T> &operator= (const Reference &r) {
-        if (!r.checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+        if (!r.checktype<T> ()) throw Exception (L, 1, "lua value has invalid type.");
         Reference::operator= (r);
         return *this;
     }
     TypedReference<T> &operator= (Reference &&r) {
-        if (!r.checktype<T> ()) throw std::runtime_error ("Lua value has invalid type.");
+        if (!r.checktype<T> ()) throw Exception (L, 1, "lua value has invalid type.");
         Reference::operator= (r);
         return *this;
     }

@@ -25,7 +25,7 @@ namespace lua {
 
 template<typename T>
 decltype (Type<T>::pull(nullptr, 0)) pull (lua_State *L, const int &index) {
-    if (!Type<T>::check (L, index)) throw std::runtime_error ("lua stack value has an invalid type.");
+    if (!Type<T>::check (L, index)) throw Exception (L, 1, "lua stack value has an invalid type.");
     return Type<T>::pull (L, index);
 }
 

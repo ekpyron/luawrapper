@@ -42,6 +42,7 @@ extern "C" {
 #include "lauxlib.h"
 #endif
 }
+#include "detail/Exception.h"
 #include "detail/template_helpers.h"
 #include "detail/helper_functions.h"
 #include "detail/State.h"
