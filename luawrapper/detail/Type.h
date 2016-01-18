@@ -177,8 +177,7 @@ struct IsSequence<std::deque<T, A>> {
 template<typename C>
 struct Type<C, typename std::enable_if<IsSequence<C>::value>::type>
 {
-    static bool check (lua_State *L, const int &_index) {
-        int index = detail::abs_index (L, _index);
+    static bool check (lua_State *L, const int &index) {
         if (!lua_istable (L, index)) return false;
         for (auto i = 1; i <= lua_objlen (L, index); i++) {
             lua_rawgeti (L, index, i);
@@ -190,8 +189,7 @@ struct Type<C, typename std::enable_if<IsSequence<C>::value>::type>
         }
         return true;
     }
-    static C pull (lua_State *L, const int &_index) {
-        int index = detail::abs_index (L, _index);
+    static C pull (lua_State *L, const int &index) {
         C v;
         for (auto i = 1; i <= lua_objlen (L, index); i++) {
             lua_rawgeti (L, index, i);
