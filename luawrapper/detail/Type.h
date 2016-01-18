@@ -180,10 +180,10 @@ struct Type<C, typename std::enable_if<IsSequence<C>::value>::type>
     static bool check (lua_State *L, const int &_index) {
         int index = detail::abs_index (L, _index);
         if (!lua_istable (L, index)) return false;
-        lua_pushnil (L);
-        while (lua_next (L, index) != 0) {
+        for (auto i = 1; i <= lua_objlen (L, index); i++) {
+            lua_rawgeti (L, index, i);
             if (!Type<typename C::value_type>::check (L, -1)) {
-                lua_pop (L, 2);
+                lua_pop (L, 1);
                 return false;
             }
             lua_pop (L, 1);
@@ -193,8 +193,8 @@ struct Type<C, typename std::enable_if<IsSequence<C>::value>::type>
     static C pull (lua_State *L, const int &_index) {
         int index = detail::abs_index (L, _index);
         C v;
-        lua_pushnil (L);
-        while (lua_next (L, index) != 0) {
+        for (auto i = 1; i <= lua_objlen (L, index); i++) {
+            lua_rawgeti (L, index, i);
             v.emplace_back (Type<typename C::value_type>::pull (L, -1));
             lua_pop (L, 1);
         }
