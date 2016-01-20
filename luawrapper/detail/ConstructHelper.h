@@ -34,7 +34,7 @@ private:
     static T *construct (lua_State *L, int startindex, seq<S...>) {
         try {
             return new T (ArgHandler<S, argtype<S>>::get (L, startindex)...);
-        } catch (std::exception &e) {
+        } catch (const std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
             return nullptr;
         } catch (...) {

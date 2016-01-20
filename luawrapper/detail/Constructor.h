@@ -50,7 +50,7 @@ struct Constructor
         int results;
         try {
             Wrap (L, results);
-        } catch (std::exception &e) {
+        } catch (const std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
         } catch (...) {
             luaL_error (L, "Lua error: unknown exception");
@@ -88,7 +88,7 @@ struct ConstructorWithSelfReference {
         int results;
         try {
             Wrap (L, results);
-        } catch (std::exception &e) {
+        } catch (const std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
         } catch (...) {
             luaL_error (L, "Lua error: unknown exception");

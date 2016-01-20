@@ -54,7 +54,7 @@ public:
         if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
         try {
             results = do_call<Retval> (L, startindex, t, fn, typename gens<sizeof...(Args)>::type ());
-        } catch (std::exception &e) {
+        } catch (const std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
         } catch (...) {
             luaL_error (L, "Lua error: unknown exception.");
@@ -100,7 +100,7 @@ public:
         if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
         try {
             results = do_call<Retval> (L, startindex, fn, typename gens<sizeof...(Args)>::type ());
-        } catch (std::exception &e) {
+        } catch (const std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
         } catch (...) {
             luaL_error (L, "Lua error: unknown exception.");
