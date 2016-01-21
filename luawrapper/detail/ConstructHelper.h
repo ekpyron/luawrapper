@@ -31,15 +31,13 @@ private:
     template<int S>
     using argtype = typename tuple_element<S, Args...>::type;
     template<int ...S>
-    static T *construct (lua_State *L, int startindex, seq<S...>) {
+    static void construct (T *ptr, lua_State *L, int startindex, seq<S...>) {
         try {
-            return new T (ArgHandler<S, argtype<S>>::get (L, startindex)...);
+            new (ptr) T (ArgHandler<S, argtype<S>>::get (L, startindex)...);
         } catch (const std::exception &e) {
             luaL_error (L, "Lua error: %s", e.what ());
-            return nullptr;
         } catch (...) {
             luaL_error (L, "Lua error: unknown exception.");
-            return nullptr;
         }
     }
     template<int ...S>
@@ -48,9 +46,10 @@ private:
         return alltrue (ArgHandler<S, argtype<S>>::check (L, startindex)...);
     }
 public:
-    static T *construct (lua_State *L, int startindex) {
-        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return nullptr;
-        return construct (L, startindex, typename gens<sizeof...(Args)>::type ());
+    static bool construct (T *ptr, lua_State *L, int startindex) {
+        if (!checkargs (L, startindex, typename gens<sizeof...(Args)>::type ())) return false;
+        construct (ptr, L, startindex, typename gens<sizeof...(Args)>::type ());
+        return true;
     }
 };
 

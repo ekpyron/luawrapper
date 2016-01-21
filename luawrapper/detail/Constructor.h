@@ -28,21 +28,29 @@ struct Constructor
 {
     static bool Wrap (lua_State *L, int &results) {
         T **ptr = static_cast<T**> (lua_newuserdata (L, sizeof (T*)));
+        *ptr = nullptr;
         try {
-            *ptr = lua::detail::ConstructHelper<T, Args...>::construct (L, 2);
+            *ptr = reinterpret_cast<T*> (::operator new (sizeof (T)));
+
+            lua_pushlightuserdata (L, *ptr);
+            lua::detail::CreateMetatable<T> (L);
+            lua_setmetatable (L, -3);
+            lua_pop (L, 1);
+
+            if (!lua::detail::ConstructHelper<T, Args...>::construct (*ptr, L, 2)) {
+                ::operator delete (ptr);
+                lua_pushnil (L);
+                lua_setmetatable (L, -2);
+                lua_pop (L, 1);
+                results = 0;
+                return false;
+            }
         } catch (...) {
+            lua_pushnil (L);
+            lua_setmetatable (L, -2);
             lua_pop (L, 1);
             throw;
         }
-        if (*ptr == nullptr) {
-            lua_pop (L, 1);
-            results = 0;
-            return false;
-        }
-        lua_pushlightuserdata (L, *ptr);
-        lua::detail::CreateMetatable<T> (L);
-        lua_setmetatable (L, -3);
-        lua_pop (L, 1);
         results = 1;
         return true;
     }
@@ -66,21 +74,28 @@ struct ConstructorWithSelfReference {
         lua_pushvalue (L, -1);
         lua_insert (L, 2);
         try {
-            *ptr = lua::detail::ConstructHelper<T, Reference, Args...>::construct(L, 2);
+            *ptr = reinterpret_cast<T*> (::operator new (sizeof (T)));
+            lua_pushlightuserdata (L, *ptr);
+            lua::detail::CreateMetatable<T> (L);
+            lua_setmetatable(L, -3);
+            lua_pop (L, 1);
+
+            if (!lua::detail::ConstructHelper<T, Reference, Args...>::construct (*ptr, L, 2)) {
+                ::operator delete (ptr);
+                lua_pushnil (L);
+                lua_setmetatable (L, -2);
+                lua_remove (L, 2);
+                lua_pop (L, 1);
+                results = 0;
+                return false;
+            }
         } catch (...) {
+            lua_pushnil (L);
+            lua_setmetatable (L, -2);
             lua_remove (L, 2);
             lua_pop (L, 1);
             throw;
         }
-        if (*ptr == nullptr) {
-            lua_pop (L, 1);
-            results = 0;
-            return false;
-        }
-        lua_pushlightuserdata (L, *ptr);
-        lua::detail::CreateMetatable<T> (L);
-        lua_setmetatable(L, -3);
-        lua_pop (L, 1);
         results = 1;
         return true;
     }
@@ -101,7 +116,8 @@ template<typename T>
 struct Destructor {
     static int Wrap (lua_State *L) noexcept {
         T *obj = static_cast<T*> (lua_touserdata (L, lua_upvalueindex (1)));
-        delete obj;
+        obj->~T ();
+        ::operator delete (obj);
         return 0;
     }
 };
