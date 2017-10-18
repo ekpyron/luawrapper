@@ -32,7 +32,7 @@ ISDKF="-arch x86_64 -isysroot $ISDK/SDKs/$ISDKVER"
 
 make clean
 make TARGET_FLAGS="-arch x86_64"
-mv src/libluajit.a lib/temp/libluajit-macos-x86_64.a
+#mv src/libluajit.a lib/temp/libluajit-macos-x86_64.a
 
 # Build for iOS device (armv7)
 ISDK=$IXCODE/Platforms/iPhoneOS.platform/Developer
@@ -51,6 +51,13 @@ make HOST_CC="gcc -m32 -arch i386" CROSS=$ISDKP TARGET_FLAGS="$ISDKF" \
      TARGET_SYS=iOS BUILDMODE="static"
 mv src/libluajit.a lib/temp/libluajit-ios-armv7s.a
 
+# Build for iOS device (arm64)
+ISDKF="-arch arm64 -miphoneos-version-min=6.0 -isysroot $ISDK/SDKs/$ISDKVER"
+make clean
+make CROSS=$ISDKP TARGET_FLAGS="$ISDKF" \
+     TARGET_SYS=iOS BUILDMODE="static"
+mv src/libluajit.a lib/temp/libluajit-ios-arm64.a
+
 # Build for iOS simulator
 ISDK=$IXCODE/Platforms/iPhoneSimulator.platform/Developer
 ISDKVER=iPhoneSimulator.sdk
@@ -60,6 +67,16 @@ make clean
 make HOST_CFLAGS="-arch i386" HOST_LDFLAGS="-arch i386" TARGET_SYS=iOS TARGET=x86 CROSS=$ISDKP TARGET_FLAGS="$ISDKF" \
      TARGET_SYS=iOS BUILDMODE="static"
 mv src/libluajit.a lib/temp/libluajit-simulator.a
+
+# Build for iOS simulator (64-bit)
+ISDK=$IXCODE/Platforms/iPhoneSimulator.platform/Developer
+ISDKVER=iPhoneSimulator.sdk
+ISDKP=/usr/bin/
+ISDKF="-arch x86_64 -mios-simulator-version-min=6.0 -isysroot $ISDK/SDKs/$ISDKVER"
+make clean
+make TARGET_SYS=iOS TARGET=x86_64 CROSS=$ISDKP TARGET_FLAGS="$ISDKF" \
+     TARGET_SYS=iOS BUILDMODE="static"
+mv src/libluajit.a lib/temp/libluajit-simulator64.a
 
 # Combine all archives to one.
 mkdir ../LuaJIT.framework
